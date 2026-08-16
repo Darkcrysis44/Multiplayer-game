@@ -1,14 +1,11 @@
 {
-  "name": "nicoleta-love-dedicated-server",
-  "version": "1.0.0",
+  "name": "multiplayer-game",
   "private": true,
-  "description": "Dedicated WebSocket multiplayer server for Nicoleta Love",
-  "main": "server.js",
-  "scripts": { "start": "node server.js" },
-  "engines": { "node": ">=20" },
-  "dependencies": {
-    "express": "^5.1.0",
-    "pg": "^8.16.3",
-    "ws": "^8.18.3"
+  "version": "1.0.0",
+  "scripts": {
+    "deploy": "wrangler deploy"
+  },
+  "devDependencies": {
+    "wrangler": "^4.0.0"
   }
 }
