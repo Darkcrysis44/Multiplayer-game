@@ -19,6 +19,7 @@ export class Room {
     this.state = state;
     this.sockets = new Map();
     this.names = new Map();
+    this.started = false;
   }
 
   async fetch(request) {
@@ -32,13 +33,16 @@ export class Room {
     this.sockets.set(id, server);
     this.names.set(id, "Player");
 
-    server.send(JSON.stringify({ type: "welcome", id }));
+    server.send(JSON.stringify({ type: "welcome", id, started: this.started }));
     this.broadcast({ type: "players", players: [...this.sockets.keys()].map(x => ({ id:x, name:this.names.get(x) || "Player" })) });
 
     server.addEventListener("message", event => {
       try {
         const msg = JSON.parse(event.data);
-        if (msg.type === "join") {
+        if (msg.type === "start") {
+          this.started = true;
+          this.broadcast({ type: "gameStart", from: id });
+        } else if (msg.type === "join") {
           this.names.set(id, String(msg.name || "Player").slice(0, 20));
           this.broadcast({ type:"players", players:[...this.sockets.keys()].map(x=>({id:x,name:this.names.get(x)||"Player"})) });
         } else {

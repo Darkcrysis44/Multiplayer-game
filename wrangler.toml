@@ -1,4 +1,4 @@
-name = "love-sword-arena-coop"
+name = "multiplayer-game1"
 main = "worker.js"
 compatibility_date = "2026-08-16"
 

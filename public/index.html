@@ -375,6 +375,7 @@ body:before{
 .lsa-shop-tab{border:1px solid #ff9db555;background:#160d18;color:#ffdce6;border-radius:10px;padding:8px 12px;cursor:pointer;font-weight:700}
 .lsa-shop-tab.active{background:#ff668f33;border-color:#ff9db5aa;box-shadow:0 0 12px #ff6e9422}
 
+.coop-start-overlay{position:absolute;inset:0;z-index:20;display:grid;place-items:center;background:#05040bd9;backdrop-filter:blur(7px);border-radius:24px}.coop-start-overlay.hidden{display:none}.coop-start-card{width:min(440px,90%);padding:28px;border:1px solid #ff9fba77;border-radius:24px;background:linear-gradient(145deg,#1d0d1a,#0b0d18);box-shadow:0 20px 70px #000b;text-align:center;color:#fff}.coop-start-card h2{margin:0 0 8px;font-size:30px;color:#ffdce7;text-shadow:0 0 18px #ff6088}.coop-start-card p{margin:0 0 18px;color:#ffd9e5;opacity:.78;line-height:1.5}.coop-start-card .lsa-btn{min-width:190px}.coop-start-status{margin-top:14px;font:12px Arial;color:#ffb8ca;opacity:.9}
 .coop-modal{position:fixed;inset:0;z-index:9999;display:flex;align-items:center;justify-content:center;background:#05040bcc;backdrop-filter:blur(8px)}
 .coop-modal.hidden{display:none}.coop-box{width:min(440px,92vw);padding:24px;border:1px solid #ff739866;border-radius:22px;background:linear-gradient(145deg,#17101e,#0b0d18);box-shadow:0 20px 80px #000b;color:#fff;font-family:Arial,sans-serif}.coop-title{font-size:22px;font-weight:800;margin-bottom:7px}.coop-sub{opacity:.7;line-height:1.45;margin-bottom:18px}.coop-box label{display:block;font-size:12px;opacity:.7;margin:9px 0 5px}.coop-box input{width:100%;padding:11px 12px;border-radius:10px;border:1px solid #ffffff22;background:#ffffff0d;color:#fff;outline:none}.coop-row{display:flex;gap:8px;margin-top:10px}.coop-row input{flex:1}.coop-row .lsa-btn{flex:1}.coop-status{margin-top:15px;padding:10px;border-radius:10px;background:#ffffff0a;font-size:13px}.coop-players{margin:10px 0;display:flex;flex-wrap:wrap;gap:7px}.coop-player{padding:7px 10px;border-radius:999px;background:#ff6f9820;border:1px solid #ff6f9840;font-size:12px}
 </style>
@@ -427,7 +428,7 @@ body:before{
 <div class="lsa-modal hidden" id="arenaModal">
  <div class="lsa-box">
   <div class="lsa-head"><div><div class="lsa-title">⚔️ Love Sword Arena</div><div class="lsa-sub">A little battlefield full of broken hearts ♡</div></div><div class="lsa-hud"><span class="lsa-pill">Lv <b id="lsaLevel">1</b></span><span class="lsa-pill">Wave <b id="lsaWave">1</b></span><span class="lsa-pill">💗 <b id="lsaGold">0</b></span><span class="lsa-pill">REB <b id="lsaRebirth">0</b></span><button class="lsa-btn" id="lsaCoopBtn" style="padding:7px 10px">🌐 CO-OP</button><button class="lsa-close" id="lsaClose">Exit</button></div></div>
-  <div class="lsa-body"><div class="lsa-canvas-wrap"><canvas class="lsa-canvas" id="lsaCanvas"></canvas><div class="lsa-help">WASD / Arrows: move • Click anywhere to swing • Space: swing • Survive each wave</div><div class="lsa-toast" id="lsaToast"></div>
+  <div class="lsa-body"><div class="lsa-canvas-wrap"><canvas class="lsa-canvas" id="lsaCanvas"></canvas><div class="coop-start-overlay hidden" id="coopStartOverlay"><div class="coop-start-card"><h2>⚔️ Ready to Fight?</h2><p id="coopStartText">Create or join a room. When everyone is ready, the host can start the battle.</p><button class="lsa-btn" id="coopStartBattle">▶ START BATTLE</button><div class="coop-start-status" id="coopStartStatus">Waiting for players…</div></div></div><div class="lsa-help">WASD / Arrows: move • Click anywhere to swing • Space: swing • Survive each wave</div><div class="lsa-toast" id="lsaToast"></div>
    <div class="lsa-upgrade hidden" id="lsaUpgrade"><div class="lsa-panel"><h2>Wave Cleared ✨</h2><p>Choose one permanent stat upgrade before the next wave.</p><div class="lsa-grid" id="lsaUpgradeGrid"></div></div></div>
    <div class="lsa-archive hidden" id="lsaArchive"><div class="lsa-archive-panel"><h2>📖 Heart Hunter Archive</h2><p>Every enemy you can encounter, their rarity, stats and special behavior.</p><div class="lsa-archive-grid" id="lsaArchiveGrid"></div><button class="lsa-btn" id="lsaArchiveClose" style="margin-top:12px">Back to Arena</button></div></div>
    <div class="lsa-shop hidden" id="lsaShop"><div class="lsa-panel"><h2>Love Armory 🛡️</h2><p>Spend Balance 💗 on permanent equipment and skills.</p><div class="lsa-shop-tabs"><button class="lsa-shop-tab active" data-cat="skill">✨ Skills</button><button class="lsa-shop-tab" data-cat="armor">🛡️ Armor</button><button class="lsa-shop-tab" data-cat="sword">⚔️ Swords</button><button class="lsa-shop-tab" data-cat="bow">🏹 Bows</button><button class="lsa-shop-tab" data-cat="acc">💎 Accessories</button><button class="lsa-shop-tab" data-cat="passive">🧬 Passives</button></div><div class="lsa-grid" id="lsaShopGrid"></div><button class="lsa-btn" id="lsaShopClose" style="margin-top:12px">Back to Arena</button></div></div>
@@ -897,7 +898,7 @@ function updateArena(dt){if(!arena.running)return;const p=arena.player,s=combatS
  e.x=Math.max(-60,Math.min(arena.w+60,e.x));e.y=Math.max(-60,Math.min(arena.h+60,e.y));
 }
 updateProjectiles(dt);for(const q of arena.particles){q.x+=q.vx*60*dt;q.y+=q.vy*60*dt;q.vx*=.96;q.vy*=.96;q.life-=dt}arena.particles=arena.particles.filter(q=>q.life>0);for(const q of arena.slashes)q.t-=dt;arena.slashes=arena.slashes.filter(q=>q.t>0);arena.spawned=arena.spawned||0;const targetCount=arena.wave%5===0?1:arena.wave*3+4;if(arena.spawned<targetCount&&arena.enemies.length<Math.min(6+arena.wave,15)){arena.spawned++;spawnEnemy(arena.wave%5===0&&arena.spawned===1)}if(arena.spawned>=targetCount&&arena.enemies.length===0){arena.running=false;const bonus=10+arena.wave*3;addArenaMoney(bonus);gainXp(50+arena.wave*10);arenaLog('Wave '+arena.wave+' cleared! Bonus +'+bonus+' 💗');arenaStats();showUpgrade()}}
-function drawArena(){const w=arena.w||800,h=arena.h||600;ac.clearRect(0,0,w,h);ac.save();if(arena.shake>0){ac.translate((Math.random()-.5)*arena.shake,(Math.random()-.5)*arena.shake);arena.shake*=.86;if(arena.shake<.2)arena.shake=0}const grad=ac.createRadialGradient(w*.5,h*.45,20,w*.5,h*.45,Math.max(w,h)*.75);grad.addColorStop(0,'#211323');grad.addColorStop(1,'#070a12');ac.fillStyle=grad;ac.fillRect(0,0,w,h);ac.strokeStyle='#ff9db51a';ac.lineWidth=1;for(let x=0;x<w;x+=55){ac.beginPath();ac.moveTo(x,0);ac.lineTo(x,h);ac.stroke()}for(let y=0;y<h;y+=55){ac.beginPath();ac.moveTo(0,y);ac.lineTo(w,y);ac.stroke()}for(let x=30;x<w;x+=110){ac.fillStyle='#ff8fab14';ac.beginPath();ac.arc(x,45,3,0,7);ac.fill();ac.beginPath();ac.arc(x+9,48,2,0,7);ac.fill()}for(const e of arena.enemies)drawEnemy(e);drawProjectiles();drawPlayer(arena.player);for(const q of arena.particles){ac.globalAlpha=Math.max(0,q.life/q.max);ac.fillStyle=q.kind==='death'?'#ff9db5':q.kind==='hurt'?'#fff':'#ffd2df';ac.beginPath();ac.arc(q.x,q.y,q.size,0,7);ac.fill()}ac.globalAlpha=1;for(const q of arena.slashes){ac.save();ac.translate(q.x,q.y);ac.rotate(q.angle);ac.globalAlpha=q.t/.22;ac.strokeStyle='#fff0f5';ac.shadowColor='#ff6e94';ac.shadowBlur=18;ac.lineWidth=7;ac.beginPath();ac.arc(18,0,55,-1.0,.8);ac.stroke();ac.strokeStyle='#ff87a7';ac.lineWidth=3;ac.beginPath();ac.arc(18,0,62,-1.0,.8);ac.stroke();ac.restore()}ac.restore()}
+function drawArena(){const w=arena.w||800,h=arena.h||600;ac.clearRect(0,0,w,h);ac.save();if(arena.shake>0){ac.translate((Math.random()-.5)*arena.shake,(Math.random()-.5)*arena.shake);arena.shake*=.86;if(arena.shake<.2)arena.shake=0}const grad=ac.createRadialGradient(w*.5,h*.45,20,w*.5,h*.45,Math.max(w,h)*.75);grad.addColorStop(0,'#211323');grad.addColorStop(1,'#070a12');ac.fillStyle=grad;ac.fillRect(0,0,w,h);ac.strokeStyle='#ff9db51a';ac.lineWidth=1;for(let x=0;x<w;x+=55){ac.beginPath();ac.moveTo(x,0);ac.lineTo(x,h);ac.stroke()}for(let y=0;y<h;y+=55){ac.beginPath();ac.moveTo(0,y);ac.lineTo(w,y);ac.stroke()}for(let x=30;x<w;x+=110){ac.fillStyle='#ff8fab14';ac.beginPath();ac.arc(x,45,3,0,7);ac.fill();ac.beginPath();ac.arc(x+9,48,2,0,7);ac.fill()}for(const e of arena.enemies)drawEnemy(e);drawProjectiles();drawPlayer(arena.player);for(const q of arena.particles){ac.globalAlpha=Math.max(0,q.life/q.max);ac.fillStyle=q.kind==='death'?'#ff9db5':q.kind==='hurt'?'#fff':'#ffd2df';ac.beginPath();ac.arc(q.x,q.y,q.size,0,7);ac.fill()}ac.globalAlpha=1;coopDrawPlayers();for(const q of arena.slashes){ac.save();ac.translate(q.x,q.y);ac.rotate(q.angle);ac.globalAlpha=q.t/.22;ac.strokeStyle='#fff0f5';ac.shadowColor='#ff6e94';ac.shadowBlur=18;ac.lineWidth=7;ac.beginPath();ac.arc(18,0,55,-1.0,.8);ac.stroke();ac.strokeStyle='#ff87a7';ac.lineWidth=3;ac.beginPath();ac.arc(18,0,62,-1.0,.8);ac.stroke();ac.restore()}ac.restore()}
 function drawPlayer(p){ac.save();ac.translate(p.x,p.y);if(p.inv>0&&Math.floor(p.inv*20)%2===0)ac.globalAlpha=.45;ac.fillStyle='#ffafc2';ac.shadowColor='#ff5f89';ac.shadowBlur=18;ac.beginPath();ac.arc(0,-20,11,0,7);ac.fill();ac.fillStyle='#f4d9df';ac.shadowBlur=0;ac.fillRect(-10,-8,20,30);ac.fillStyle='#7d3550';ac.fillRect(-10,22,7,19);ac.fillRect(3,22,7,19);ac.fillStyle='#160911';ac.fillRect(-28,-48,56,6);ac.fillStyle='#ff6f91';ac.fillRect(-28,-48,56*Math.max(0,p.hp/combatStats().maxHp),6);ac.strokeStyle='#ffd8e2';ac.lineWidth=1;ac.strokeRect(-28,-48,56,6);const a=p.angle;if(arenaState.activeWeaponType==='bow'){ac.strokeStyle='#d9a9bc';ac.lineWidth=3;ac.beginPath();ac.arc(Math.cos(a)*24,Math.sin(a)*24,20,a-1.1,a+1.1);ac.stroke();ac.strokeStyle='#fff0f5';ac.lineWidth=2;ac.beginPath();ac.moveTo(Math.cos(a)*4,Math.sin(a)*4);ac.lineTo(Math.cos(a)*44,Math.sin(a)*44);ac.stroke()}else{ac.strokeStyle='#fff';ac.lineWidth=4;ac.beginPath();ac.moveTo(Math.cos(a)*4,Math.sin(a)*4);ac.lineTo(Math.cos(a)*32,Math.sin(a)*32);ac.stroke();ac.strokeStyle='#ffb8c9';ac.lineWidth=2;ac.beginPath();ac.moveTo(Math.cos(a)*28,Math.sin(a)*28);ac.lineTo(Math.cos(a)*62,Math.sin(a)*62);ac.stroke()}ac.fillStyle='#ff6e95';ac.beginPath();ac.moveTo(-7,-25);ac.quadraticCurveTo(0,-35,7,-25);ac.fill();ac.restore()}
 function drawEnemy(e){
  ac.save();ac.translate(e.x,e.y);const pulse=Math.sin(performance.now()/170+e.x)*1.8;ac.globalAlpha=e.hit>0?.55:1;
@@ -926,7 +927,7 @@ function drawEnemy(e){
 }
 
 /* ===== Cloudflare Durable Object Online Co-op ===== */
-let coopSocket=null, coopId=null, coopRoom='', coopHost=false, coopPeers={}, coopLastNet=0, coopLastState=0;
+let coopSocket=null, coopId=null, coopRoom='', coopHost=false, coopPeers={}, coopLastNet=0, coopLastState=0, coopStarted=false;
 function coopUrl(room){
   const proto=location.protocol==='https:'?'wss:':'ws:';
   return proto+'//'+location.host+'/ws?room='+encodeURIComponent(room);
@@ -950,9 +951,10 @@ function coopConnect(){
 }
 function coopSend(msg){if(coopSocket&&coopSocket.readyState===1)coopSocket.send(JSON.stringify(msg))}
 function coopHandle(m){
-  if(m.type==='welcome'){coopId=m.id;return}
-  if(m.type==='players'){coopRenderPlayers(m.players);return}
+  if(m.type==='welcome'){coopId=m.id;if(m.started){coopStarted=true;beginCoopBattle(false)}return}
+  if(m.type==='players'){coopRenderPlayers(m.players);updateCoopLobby();return}
   if(m.from===coopId)return;
+  if(m.type==='gameStart'){coopStarted=true;beginCoopBattle(false);return}
   if(m.type==='pos'){
     const p=coopPeers[m.from]||(coopPeers[m.from]={id:m.from,name:'Player',x:80,y:100,angle:0});
     p.x=m.x;p.y=m.y;p.angle=m.angle||0;p.name=m.name||p.name;
@@ -1002,14 +1004,31 @@ function coopTick(){
     coopSend({type:'state',wave:arena.wave,enemies});
   }
 }
-function coopStart(host){
-  coopHost=host; coopConnect();
+function showCoopStart(show){$('coopStartOverlay').classList.toggle('hidden',!show);}
+function updateCoopLobby(){
+  const players=Object.keys(coopPeers).length+(coopId?1:0);
+  const st=$('coopStartStatus');
+  if(st)st.textContent=coopHost?'You are the host • '+players+' player'+(players===1?'':'s')+' connected':'Waiting for the host to start • '+players+' player'+(players===1?'':'s')+' connected';
+  const btn=$('coopStartBattle'); if(btn){btn.disabled=!coopHost;btn.textContent=coopHost?'▶ START BATTLE':'⏳ WAITING FOR HOST';}
+  const txt=$('coopStartText'); if(txt)txt.textContent=coopHost?'Everyone is in the room? Press START BATTLE and the fight begins for everyone.':'You are connected. Wait for the host to press START BATTLE.';
 }
-$('lsaCoopBtn').onclick=()=>{$('coopModal').classList.remove('hidden')};
+function resetArenaRun(){
+  arena.running=false; arena.wave=1; arena.spawned=0; arena.enemies=[]; arena.projectiles=[]; arena.particles=[]; arena.slashes=[]; resetWaveUpgrades(); arena.player={x:0,y:0,hp:combatStats().maxHp,dir:1,angle:0,attackCd:0,slashT:0,inv:0,skillCd:0}; resizeArena(); arenaStats();
+}
+function beginCoopBattle(announce=true){
+  if(arenaModal.classList.contains('hidden'))arenaModal.classList.remove('hidden');
+  $('coopModal').classList.add('hidden'); showCoopStart(false); arena.running=true; initArenaAudio(); arenaStats(); arenaLog('⚔️ Co-op battle started!');
+  if(announce)coopSend({type:'start'});
+}
+function coopStart(host){
+  coopHost=host; coopStarted=false; resetArenaRun(); showCoopStart(true); updateCoopLobby(); coopConnect();
+}
+$('lsaCoopBtn').onclick=()=>{$('coopModal').classList.remove('hidden');updateCoopLobby()};
 $('coopClose').onclick=()=>{$('coopModal').classList.add('hidden')};
 $('coopHost').onclick=()=>coopStart(true);
 $('coopJoin').onclick=()=>coopStart(false);
 $('coopRandom').onclick=()=>{$('coopRoom').value=Math.random().toString(36).slice(2,8).toUpperCase()};
+$('coopStartBattle').onclick=()=>{if(coopHost&&coopSocket&&coopSocket.readyState===1){coopStarted=true;beginCoopBattle(true)}};
 function coopPatchGame(){
   const oldLoop=arenaLoop;
 }
@@ -1022,8 +1041,8 @@ slash=function(angle){
 };
 coopDrawPlayers();
 function arenaLoop(t){coopTick();const dt=Math.min(.033,(t-arena.last)/1000||0);arena.last=t;updateArena(dt);drawArena();if(arenaModal&&!arenaModal.classList.contains('hidden'))requestAnimationFrame(arenaLoop)}
-function startArena(){initArenaAudio();arenaModal.classList.remove('hidden');$('lsaArchive').classList.add('hidden');arena.running=true;arena.wave=1;arena.spawned=0;arena.enemies=[];arena.projectiles=[];arena.particles=[];arena.slashes=[];resetWaveUpgrades();arena.player={x:0,y:0,hp:combatStats().maxHp,dir:1,angle:0,attackCd:0,slashT:0,inv:0,skillCd:0};resizeArena();arenaStats();arenaLog('Enter the arena. Broken-heart fighters are coming...');requestAnimationFrame(arenaLoop)}
-function endArena(){arena.running=false;arenaModal.classList.add('hidden');saveArena()}
+function startArena(){initArenaAudio();arenaModal.classList.remove('hidden');$('lsaArchive').classList.add('hidden');resetArenaRun();arena.running=true;arenaStats();arenaLog('Enter the arena. Broken-heart fighters are coming...');requestAnimationFrame(arenaLoop)}
+function endArena(){arena.running=false;arenaModal.classList.add('hidden');showCoopStart(false);coopStarted=false;try{if(coopSocket)coopSocket.close()}catch(e){}coopSocket=null;coopId=null;coopPeers={};coopHost=false;saveArena()}
 function showUpgrade(){const grid=$('lsaUpgradeGrid');grid.innerHTML='';const m=arenaState.mult;const choices=[['❤️','Vitality','Max HP +'+Math.round(25*m),()=>arenaState.waveUpgrades.hp+=Math.round(25*m)],['⚔️','Sharpness','Attack +'+(4*m).toFixed(1),()=>arenaState.waveUpgrades.atk+=4*m],['💨','Grace','Speed +'+(.35*m).toFixed(2),()=>arenaState.waveUpgrades.spd+=.35*m],['✨','True Love','Crit +5%',()=>arenaState.waveUpgrades.crit+=.05],['🛡️','Protection','Armor +'+(3*m).toFixed(1),()=>arenaState.waveUpgrades.armor+=3*m],['💗','Second Heart','Heal 35% HP',()=>arena.player.hp=Math.min(combatStats().maxHp,arena.player.hp+combatStats().maxHp*.35)]];choices.sort(()=>Math.random()-.5).slice(0,3).forEach(c=>{const d=document.createElement('div');d.className='lsa-item';d.innerHTML='<div class="ico">'+c[0]+'</div><b>'+c[1]+'</b><span>'+c[2]+'</span><button>Choose</button>';d.querySelector('button').onclick=()=>{c[3]();arena.wave++;arena.spawned=0;arena.running=true;if(arena.wave%5===0){arenaLog('⚠️ BOSS WAVE '+arena.wave+' — a Broken Heart Lord has appeared!');toast('BOSS WAVE! 👑💔')} $('lsaUpgrade').classList.add('hidden');arenaStats();arenaLog('Upgrade selected: '+c[1]);saveArena()};grid.appendChild(d)});$('lsaUpgrade').classList.remove('hidden')}
 function useSkill(){const sk=arenaState.skills[0];if(!arena.running||!sk||arena.player.skillCd>0)return;const p=arena.player;if(sk.id==='nova'){arena.player.skillCd=8;const cs=combatStats();arena.shake=12;for(const e of [...arena.enemies]){const d=Math.hypot(e.x-p.x,e.y-p.y);if(d<190){damageEnemy(e,cs.atk*3)}}burst(p.x,p.y,40,'death');sfx('level');toast('HEART NOVA! 💗')}else if(sk.id==='barrage'){arena.player.skillCd=10;const cs=combatStats();for(let j=-2;j<=2;j++){const a=p.angle+j*.18;arena.slashes.push({x:p.x,y:p.y,angle:a,t:.35});for(const e of [...arena.enemies]){const dd=Math.hypot(e.x-p.x,e.y-p.y);let da=Math.atan2(e.y-p.y,e.x-p.x)-a;da=Math.atan2(Math.sin(da),Math.cos(da));if(dd<165&&Math.abs(da)<.65)damageEnemy(e,cs.atk*2.2)}}burst(p.x,p.y,35,'slash');sfx('level');toast('ROSE BARRAGE! 🌹')}else if(sk.id==='moon'){arena.player.skillCd=7;const cs=combatStats();const a=p.angle;arena.projectiles.push({x:p.x,y:p.y,vx:Math.cos(a)*7,vy:Math.sin(a)*7,life:2.2,damage:cs.atk*5,angle:a,owner:'playerSkill',wide:true});arena.slashes.push({x:p.x,y:p.y,angle:a,t:.35});burst(p.x+Math.cos(a)*30,p.y+Math.sin(a)*30,24,'slash');sfx('level');toast('MOON SLASH! 🌙')}else if(sk.id==='storm'){arena.player.skillCd=12;const cs=combatStats();for(let i=0;i<10;i++){const a=Math.random()*Math.PI*2,d=70+Math.random()*220;arena.projectiles.push({x:p.x+Math.cos(a)*d,y:p.y+Math.sin(a)*d,vx:0,vy:0,life:1.0,damage:cs.atk*1.5,angle:a,owner:'playerSkill',rain:true,t:0});}for(const e of [...arena.enemies]){if(Math.hypot(e.x-p.x,e.y-p.y)<260)damageEnemy(e,cs.atk*2.5)}burst(p.x,p.y,45,'death');sfx('level');toast('HEARTSTORM! 💞')}else if(sk.id==='dash'){arena.player.skillCd=5;const cs=combatStats();const nx=p.x+Math.cos(p.angle)*180,ny=p.y+Math.sin(p.angle)*180;p.x=Math.max(30,Math.min(arena.w-30,nx));p.y=Math.max(62,Math.min(arena.h-30,ny));arena.slashes.push({x:p.x,y:p.y,angle:p.angle,t:.3});for(const e of [...arena.enemies]){if(Math.hypot(e.x-p.x,e.y-p.y)<75)damageEnemy(e,cs.atk*2)}burst(p.x,p.y,28,'slash');sfx('slash');toast('LOVE DASH! ✨')}arenaStats()}
 const shopItems=[
