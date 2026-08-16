@@ -1,0 +1,1 @@
+{"name":"multiplayer-game","private":true,"scripts":{"deploy":"wrangler deploy"},"devDependencies":{"wrangler":"^4.30.0"}}
