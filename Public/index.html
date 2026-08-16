@@ -376,26 +376,8 @@ body:before{
 .lsa-shop-tab.active{background:#ff668f33;border-color:#ff9db5aa;box-shadow:0 0 12px #ff6e9422}
 </style>
 <style>.lsa-chance-panel{grid-column:1/-1;background:#180b15;border:1px solid #5f2a49;border-radius:14px;padding:12px}.lsa-chances{display:grid;gap:8px;margin-top:8px}.lsa-chances>div{padding:8px;border-bottom:1px solid #3b1b2e;font-size:11px}.lsa-preview{margin-top:10px;font-size:11px}.lsa-loot-row{padding:4px 0}.lsa-divider{grid-column:1/-1;border-top:2px solid #7b3558;margin:8px 0;padding-top:10px}
-/* ================= LOVE SWORD ARENA — MULTIPLAYER ================= */
-.lsa-mp-open{border-color:#8ed8ff66!important;background:#6bc9ff12!important}
-.lsa-mp-modal{position:absolute;inset:0;z-index:15;background:#050711e8;backdrop-filter:blur(10px);display:grid;place-items:center;padding:18px}
-.lsa-mp-panel{width:min(94%,620px);border:1px solid #8ed8ff55;border-radius:24px;padding:22px;background:linear-gradient(145deg,#10202b,#0b101c);box-shadow:0 25px 80px #000c}
-.lsa-mp-panel h2{margin:0 0 5px;color:#e4f8ff;font-size:27px;font-weight:400}
-.lsa-mp-panel p{font:12px Arial;color:#c5eafa;opacity:.78;line-height:1.5}
-.lsa-mp-form{display:grid;grid-template-columns:1fr 1fr;gap:9px;margin-top:14px}
-.lsa-mp-form input{width:100%;border:1px solid #8ed8ff35;background:#ffffff08;color:#fff;border-radius:11px;padding:11px;font:12px Arial;outline:none}
-.lsa-mp-form input:focus{border-color:#8ed8ffaa}
-.lsa-mp-wide{grid-column:1/-1}
-.lsa-mp-actions{display:flex;gap:8px;flex-wrap:wrap;margin-top:12px}
-.lsa-mp-actions button{border:1px solid #8ed8ff55;background:#72cfff16;color:#e8f9ff;border-radius:11px;padding:10px 13px;cursor:pointer;font:bold 11px Arial}
-.lsa-mp-actions button:hover{background:#72cfff28}
-.lsa-mp-status{margin-top:12px;padding:9px 11px;border-radius:11px;background:#ffffff06;border:1px solid #ffffff10;font:11px Arial;color:#bfe9fa}
-.lsa-mp-status.ok{color:#a9ffc9;border-color:#8affb033}
-.lsa-mp-status.bad{color:#ffb0bd;border-color:#ff809633}
-.lsa-mp-room{display:inline-block;padding:3px 8px;border-radius:999px;background:#72cfff18;border:1px solid #72cfff38;color:#c9efff;font-weight:bold}
-.lsa-remote-badge{position:absolute;right:12px;top:12px;z-index:4;padding:7px 10px;border-radius:999px;background:#07131bbb;border:1px solid #8ed8ff35;color:#c9efff;font:bold 10px Arial;pointer-events:none}
-.lsa-remote-badge b{color:#8ed8ff}
-@media(max-width:600px){.lsa-mp-form{grid-template-columns:1fr}.lsa-mp-wide{grid-column:auto}}
+/* CO-OP multiplayer */
+.coop-btn{border:1px solid #79d9ff55!important;background:#5ac8fa12!important}.coop-overlay{position:absolute;inset:0;z-index:20;background:#070710e8;backdrop-filter:blur(12px);display:grid;place-items:center;padding:18px}.coop-panel{width:min(94%,520px);border:1px solid #79d9ff66;border-radius:24px;padding:24px;background:linear-gradient(145deg,#0b1824,#180b16);box-shadow:0 25px 90px #000d}.coop-panel h2{margin:0 0 7px;color:#e6f8ff;font-size:28px;font-weight:400}.coop-panel p{font:12px Arial;color:#bfe9f8;opacity:.8}.coop-input{width:100%;box-sizing:border-box;margin:7px 0;padding:12px;border:1px solid #79d9ff44;border-radius:11px;background:#ffffff08;color:#fff;outline:none}.coop-actions{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:8px}.coop-status{margin-top:12px;padding:10px;border-radius:12px;background:#ffffff06;border:1px solid #ffffff12;font:11px Arial;color:#d8f6ff}.coop-room{font-size:22px;letter-spacing:4px;color:#fff;text-align:center;margin:10px 0}.coop-close{margin-top:10px;width:100%}.coop-badge{position:absolute;left:14px;top:14px;z-index:8;padding:7px 10px;border-radius:999px;background:#07111add;border:1px solid #79d9ff55;color:#dff8ff;font:bold 10px Arial;pointer-events:none}.coop-badge b{color:#7edcff}
 </style></head>
 <body>
 <div class="decor">
@@ -437,7 +419,6 @@ body:before{
   <button class="game-choice" id="memoryChoice">🃏 &nbsp; Love Memory<br><span style="font-weight:normal;opacity:.6">Flip and match the love cards</span></button>
   <button class="game-choice" id="chooseChoice">💘 &nbsp; Choose My Heart<br><span style="font-weight:normal;opacity:.6">Find the real heart in the boxes</span></button>
   <div class="game-choice" id="arenaChoice">⚔️ &nbsp; Love Sword Arena<br><span style="font-weight:normal;opacity:.6">Human broken-heart enemies • big arena • gear • waves • upgrades</span></div>
-  <button class="game-choice lsa-mp-open" id="arenaMpChoice">🌐 &nbsp; Love Sword Arena — Multiplayer<br><span style="font-weight:normal;opacity:.6">Play together in the same arena • room code • live movement</span></button>
 
   <button class="game-menu-close" id="gameMenuClose">Close ♡</button>
  </div>
@@ -445,31 +426,12 @@ body:before{
 
 <div class="lsa-modal hidden" id="arenaModal">
  <div class="lsa-box">
-  <div class="lsa-head"><div><div class="lsa-title">⚔️ Love Sword Arena</div><div class="lsa-sub">A little battlefield full of broken hearts ♡</div></div><div class="lsa-hud"><span class="lsa-pill">Lv <b id="lsaLevel">1</b></span><span class="lsa-pill">Wave <b id="lsaWave">1</b></span><span class="lsa-pill">💗 <b id="lsaGold">0</b></span><span class="lsa-pill">REB <b id="lsaRebirth">0</b></span><button class="lsa-close" id="lsaClose">Exit</button></div></div>
-  <div class="lsa-body"><div class="lsa-canvas-wrap"><canvas class="lsa-canvas" id="lsaCanvas"></canvas><div class="lsa-help">WASD / Arrows: move • Click anywhere to swing • Space: swing • Survive each wave</div>
-<div class="lsa-remote-badge hidden" id="lsaRemoteBadge">🌐 <b id="lsaRemoteCount">0</b> player(s) online</div>
-<div class="lsa-mp-modal hidden" id="lsaMpModal">
- <div class="lsa-mp-panel">
-  <h2>🌐 Multiplayer Arena</h2>
-  <p>Connect this arena to your Cloudflare WebSocket endpoint. The room code is shared only with the players you invite.</p>
-  <div class="lsa-mp-form">
-   <input class="lsa-mp-wide" id="lsaMpUrl" placeholder="wss://your-worker.example.com/ws" autocomplete="off">
-   <input id="lsaMpName" placeholder="Your name" maxlength="18" autocomplete="off">
-   <input id="lsaMpRoom" placeholder="Room code" maxlength="24" autocomplete="off">
-  </div>
-  <div class="lsa-mp-actions">
-   <button id="lsaMpConnect">Connect & Join</button>
-   <button id="lsaMpRandom">Generate Room</button>
-   <button id="lsaMpCopy" disabled>Copy Invite</button>
-   <button id="lsaMpLeave">Disconnect</button>
-   <button id="lsaMpClose">Back</button>
-  </div>
-  <div class="lsa-mp-status" id="lsaMpStatus">Not connected.</div>
- </div>
-</div><div class="lsa-toast" id="lsaToast"></div>
+  <div class="lsa-head"><div><div class="lsa-title">⚔️ Love Sword Arena</div><div class="lsa-sub">A little battlefield full of broken hearts ♡</div></div><div class="lsa-hud"><button class="lsa-close coop-btn" id="lsaCoopBtn">👥 CO-OP</button><span class="lsa-pill">Lv <b id="lsaLevel">1</b></span><span class="lsa-pill">Wave <b id="lsaWave">1</b></span><span class="lsa-pill">💗 <b id="lsaGold">0</b></span><span class="lsa-pill">REB <b id="lsaRebirth">0</b></span><button class="lsa-close" id="lsaClose">Exit</button></div></div>
+  <div class="lsa-body"><div class="lsa-canvas-wrap"><canvas class="lsa-canvas" id="lsaCanvas"></canvas><div class="coop-badge hidden" id="coopBadge">👥 CO-OP • <b id="coopBadgeText">OFFLINE</b></div><div class="lsa-help">WASD / Arrows: move • Click anywhere to swing • Space: swing • Survive each wave</div><div class="lsa-toast" id="lsaToast"></div>
    <div class="lsa-upgrade hidden" id="lsaUpgrade"><div class="lsa-panel"><h2>Wave Cleared ✨</h2><p>Choose one permanent stat upgrade before the next wave.</p><div class="lsa-grid" id="lsaUpgradeGrid"></div></div></div>
    <div class="lsa-archive hidden" id="lsaArchive"><div class="lsa-archive-panel"><h2>📖 Heart Hunter Archive</h2><p>Every enemy you can encounter, their rarity, stats and special behavior.</p><div class="lsa-archive-grid" id="lsaArchiveGrid"></div><button class="lsa-btn" id="lsaArchiveClose" style="margin-top:12px">Back to Arena</button></div></div>
-   <div class="lsa-shop hidden" id="lsaShop"><div class="lsa-panel"><h2>Love Armory 🛡️</h2><p>Spend Balance 💗 on permanent equipment and skills.</p><div class="lsa-shop-tabs"><button class="lsa-shop-tab active" data-cat="skill">✨ Skills</button><button class="lsa-shop-tab" data-cat="armor">🛡️ Armor</button><button class="lsa-shop-tab" data-cat="sword">⚔️ Swords</button><button class="lsa-shop-tab" data-cat="bow">🏹 Bows</button><button class="lsa-shop-tab" data-cat="acc">💎 Accessories</button><button class="lsa-shop-tab" data-cat="passive">🧬 Passives</button></div><div class="lsa-grid" id="lsaShopGrid"></div><button class="lsa-btn" id="lsaShopClose" style="margin-top:12px">Back to Arena</button></div></div>
+   <div class="coop-overlay hidden" id="coopOverlay"><div class="coop-panel"><h2>👥 Love Sword Arena — CO-OP</h2><p>İki oyuncu aynı arenada birlikte savaşır. Cloudflare WebSocket Worker adresini gir, oda oluştur veya mevcut odaya katıl.</p><input class="coop-input" id="coopWs" placeholder="wss://senin-worker.adresin/ws"><input class="coop-input" id="coopName" placeholder="Oyuncu adı" maxlength="18"><input class="coop-input" id="coopRoom" placeholder="Room Code (katılmak için)" maxlength="12"><div class="coop-actions"><button class="lsa-btn" id="coopCreate">🏠 Create Room</button><button class="lsa-btn" id="coopJoin">🔑 Join Room</button></div><div class="coop-room hidden" id="coopRoomDisplay"></div><div class="coop-status" id="coopStatus">Bağlantı bekleniyor...</div><button class="lsa-btn coop-close" id="coopClose">Back to Arena</button></div></div>
+<div class="lsa-shop hidden" id="lsaShop"><div class="lsa-panel"><h2>Love Armory 🛡️</h2><p>Spend Balance 💗 on permanent equipment and skills.</p><div class="lsa-shop-tabs"><button class="lsa-shop-tab active" data-cat="skill">✨ Skills</button><button class="lsa-shop-tab" data-cat="armor">🛡️ Armor</button><button class="lsa-shop-tab" data-cat="sword">⚔️ Swords</button><button class="lsa-shop-tab" data-cat="bow">🏹 Bows</button><button class="lsa-shop-tab" data-cat="acc">💎 Accessories</button><button class="lsa-shop-tab" data-cat="passive">🧬 Passives</button></div><div class="lsa-grid" id="lsaShopGrid"></div><button class="lsa-btn" id="lsaShopClose" style="margin-top:12px">Back to Arena</button></div></div>
   </div><aside class="lsa-side"><div class="lsa-card"><h3>CHARACTER</h3><div class="lsa-stat"><span>HP</span><b id="lsaHpText">100 / 100</b></div><div class="lsa-bar"><i id="lsaHpBar"></i></div><div class="lsa-stat"><span>Attack</span><b id="lsaAtk">14</b></div><div class="lsa-stat"><span>Speed</span><b id="lsaSpd">3.2</b></div><div class="lsa-stat"><span>Crit</span><b id="lsaCrit">8%</b></div><div class="lsa-stat"><span>Armor</span><b id="lsaArmor">0</b></div><div class="lsa-stat"><span>XP</span><b id="lsaXpText">0 / 100</b></div><div class="lsa-bar"><i id="lsaXpBar"></i></div><div class="lsa-stat"><span>Multiplier</span><b id="lsaMult">×1.00</b></div></div><div class="lsa-card"><h3>GEAR</h3><div class="lsa-stat"><span>Weapon</span><b id="lsaWeapon">Rose Blade</b></div><div class="lsa-stat"><span>Armor</span><b id="lsaArmorName">Love Cloth</b></div><div class="lsa-stat"><span>Accessory</span><b id="lsaAcc">None</b></div></div><div class="lsa-card"><h3>ACTIONS</h3><div class="lsa-actions"><button class="lsa-btn" id="lsaShopBtn">🛍️ Shop</button><button class="lsa-btn" id="lsaArchiveBtn">📖 Enemy Archive</button><button class="lsa-btn" id="lsaRestart">↻ Restart</button><button class="lsa-btn" id="lsaRebirthBtn" disabled>🔄 Rebirth (Lv 50)</button></div></div><div class="lsa-card"><h3>SKILL • R</h3><div class="lsa-stat"><span>Equipped</span><b id="lsaSkillName">None</b></div><div class="lsa-stat"><span>Cooldown</span><b id="lsaSkillCd">Ready</b></div><button class="lsa-btn" id="lsaSkillUse" style="width:100%">✨ Use Skill [R]</button></div><div class="lsa-card"><h3>BATTLE LOG</h3><div class="lsa-log" id="lsaLog"></div></div></aside></div>
  </div>
 </div>
@@ -1030,153 +992,37 @@ arenaCanvas.addEventListener('mousedown',e=>{const r=arenaCanvas.getBoundingClie
 $('lsaSkillUse').onclick=useSkill;arenaCanvas.addEventListener('touchstart',e=>{const t=e.touches[0],r=arenaCanvas.getBoundingClientRect();slash(Math.atan2(t.clientY-r.top-arena.player.y,t.clientX-r.left-arena.player.x))},{passive:true});
 
 
-/* ================= LOVE SWORD ARENA — MULTIPLAYER CLIENT =================
-   Cloudflare side only needs to relay JSON packets between clients in a room.
-   Client packets:
-   join {type:"join",room,id,name}
-   pose {type:"pose",room,id,name,x,y,angle,hp,weapon}
-   attack {type:"attack",room,id,angle,weapon}
-   leave {type:"leave",room,id}
-   The client also accepts {type:"players",players:[...]} snapshots and
-   {type:"player",...}/{type:"pose",...}/{type:"attack",...}/{type:"leave",...}.
-*/
-const mp={
- ws:null,connected:false,room:'',name:'',id:(crypto.randomUUID?crypto.randomUUID():'p_'+Math.random().toString(36).slice(2)),
- remotes:new Map(),lastPose:0,lastAttack:0,mode:false,url:''
-};
-const mpModal=$('lsaMpModal'),mpUrl=$('lsaMpUrl'),mpName=$('lsaMpName'),mpRoom=$('lsaMpRoom'),
- mpStatus=$('lsaMpStatus'),mpBadge=$('lsaRemoteBadge'),mpCount=$('lsaRemoteCount');
-
-function mpSetStatus(text,kind=''){mpStatus.textContent=text;mpStatus.className='lsa-mp-status '+kind}
-function mpRandomRoom(){mpRoom.value=Math.random().toString(36).slice(2,8).toUpperCase()}
-function mpLoadConfig(){
- mpUrl.value=localStorage.getItem('nicoletaLoveArenaWs')||'';
- mpName.value=localStorage.getItem('nicoletaLoveArenaName')||'Enes';
- const qp=new URLSearchParams(location.search);
- mpRoom.value=qp.get('room')||localStorage.getItem('nicoletaLoveArenaRoom')||'';
- if(!mpRoom.value)mpRandomRoom();
-}
-function mpSend(packet){if(mp.ws&&mp.ws.readyState===1){try{mp.ws.send(JSON.stringify(packet))}catch(e){}}}
-function mpRefreshBadge(){const n=mp.remotes.size;mpCount.textContent=n;mpBadge.classList.toggle('hidden',!mp.mode||!mp.connected)}
-function mpConnect(){
- const url=mpUrl.value.trim(),room=mpRoom.value.trim().replace(/\s+/g,'').slice(0,24),name=mpName.value.trim().slice(0,18)||'Player';
- if(!url){mpSetStatus('Enter your Cloudflare WebSocket URL first.','bad');return}
- if(!/^wss?:\/\//i.test(url)){mpSetStatus('WebSocket URL must start with ws:// or wss://.','bad');return}
- if(!room){mpSetStatus('Enter a room code.','bad');return}
- mpDisconnect(false);
- mp.url=url;mp.room=room;mp.name=name;mp.mode=true;
- localStorage.setItem('nicoletaLoveArenaWs',url);localStorage.setItem('nicoletaLoveArenaName',name);localStorage.setItem('nicoletaLoveArenaRoom',room);
- mpSetStatus('Connecting to '+url+' …');
- try{mp.ws=new WebSocket(url)}catch(e){mpSetStatus('Could not create WebSocket.','bad');mp.mode=false;return}
- mp.ws.onopen=()=>{
-   mp.connected=true;mpRefreshBadge();
-   mpSetStatus('Connected • room '+room,'ok');
-   mpSend({type:'join',room,id:mp.id,name});
-   $('lsaMpModal').classList.add('hidden');
-   toast('Multiplayer connected • Room '+room+' 🌐');
- };
- mp.ws.onmessage=e=>{try{const p=JSON.parse(e.data);mpHandle(p)}catch(err){}};
- mp.ws.onerror=()=>{mpSetStatus('Connection error. Check the Cloudflare Worker URL.','bad')};
- mp.ws.onclose=()=>{mp.connected=false;mpRefreshBadge();if(mp.mode)mpSetStatus('Disconnected from multiplayer.','bad')};
-}
-function mpDisconnect(show=true){
- if(mp.ws){try{mpSend({type:'leave',room:mp.room,id:mp.id})}catch(e){}try{mp.ws.close()}catch(e){}}
- mp.ws=null;mp.connected=false;mp.remotes.clear();mp.mode=false;mpRefreshBadge();
- if(show)mpSetStatus('Disconnected.');
-}
-function mpHandle(p){
- if(p.room&&mp.room&&p.room!==mp.room)return;
- if(p.type==='players'&&Array.isArray(p.players)){
-   const ids=new Set();
-   p.players.forEach(x=>{if(x.id&&x.id!==mp.id){ids.add(x.id);mpUpdateRemote(x)}})
-   for(const id of mp.remotes.keys())if(!ids.has(id))mp.remotes.delete(id);
- }else if(p.type==='player'||p.type==='pose'||p.type==='state'){
-   if(p.id&&p.id!==mp.id)mpUpdateRemote(p);
- }else if(p.type==='attack'){
-   if(p.id&&p.id!==mp.id)mpRemoteAttack(p);
- }else if(p.type==='leave'){
-   if(p.id)mp.remotes.delete(p.id);
+/* ================= REAL CO-OP LAYER ================= */
+(function(){
+ const $c=id=>document.getElementById(id);
+ const overlay=$c('coopOverlay'), wsInput=$c('coopWs'), nameInput=$c('coopName'), roomInput=$c('coopRoom'), status=$c('coopStatus'), roomDisplay=$c('coopRoomDisplay'), badge=$c('coopBadge'), badgeText=$c('coopBadgeText');
+ let sock=null, coop={on:false,host:false,room:'',id:'',name:'Player',peers:{},lastSend:0,lastState:0};
+ try{wsInput.value=localStorage.getItem('loveArenaWs')||'';nameInput.value=localStorage.getItem('loveArenaName')||'Enes';}catch(e){}
+ function setStatus(x){status.textContent=x}
+ function setBadge(){badge.classList.toggle('hidden',!coop.on);badgeText.textContent=coop.on?(coop.host?'HOST • '+coop.room:'JOINED • '+coop.room):'OFFLINE'}
+ function send(o){if(sock&&sock.readyState===1)sock.send(JSON.stringify(o))}
+ function code(){return Math.random().toString(36).slice(2,8).toUpperCase()}
+ function connect(host){
+   const url=wsInput.value.trim(); if(!url){setStatus('Önce Cloudflare WebSocket URL gir.');return}
+   try{localStorage.setItem('loveArenaWs',url);localStorage.setItem('loveArenaName',nameInput.value.trim()||'Player')}catch(e){}
+   coop.host=host; coop.room=(host?code():roomInput.value.trim().toUpperCase()); if(!coop.room){setStatus('Room Code gir.');return}
+   coop.name=nameInput.value.trim()||'Player'; coop.id=crypto.randomUUID?crypto.randomUUID():Math.random().toString(36).slice(2);
+   try{sock=new WebSocket(url)}catch(e){setStatus('WebSocket açılamadı.');return}
+   setStatus('Cloudflare sunucusuna bağlanılıyor...');
+   sock.onopen=()=>{send({t:'hello',room:coop.room,id:coop.id,name:coop.name,host:coop.host});setStatus(host?'Oda oluşturuldu. İkinci oyuncu bekleniyor...':'Odaya bağlanıldı. Host bekleniyor...');roomDisplay.textContent='ROOM: '+coop.room;roomDisplay.classList.remove('hidden');coop.on=true;setBadge();startArena();}
+   sock.onmessage=e=>{let m;try{m=JSON.parse(e.data)}catch(_){return} if(m.t==='peer'){coop.peers[m.id]=m;return} if(m.t==='leave'){delete coop.peers[m.id];return} if(m.t==='state'&&!coop.host){if(m.room&&m.room!==coop.room)return; if(m.player)coop.peers[m.host||'host']={id:m.host||'host',name:m.name||'Host',x:m.player.x,y:m.player.y,hp:m.player.hp,maxHp:m.player.maxHp,angle:m.player.angle}; if(Array.isArray(m.enemies))arena.enemies=m.enemies.map(e=>({...e})); if(Array.isArray(m.projectiles))arena.projectiles=m.projectiles.map(e=>({...e})); if(m.wave)arena.wave=m.wave; arena.player.hp=m.selfHp??arena.player.hp; arenaStats();} if(m.t==='move'){coop.peers[m.id]={...(coop.peers[m.id]||{}),...m};} if(m.t==='attack'&&coop.host){remoteAttack(m.id,m.angle)} if(m.t==='requestState'&&coop.host)broadcastState()}
+   sock.onclose=()=>{coop.on=false;setBadge();setStatus('Bağlantı kapandı.');for(const k in coop.peers)delete coop.peers[k]}; sock.onerror=()=>setStatus('WebSocket bağlantı hatası.');
  }
- mpRefreshBadge();
-}
-function mpUpdateRemote(p){
- let r=mp.remotes.get(p.id);
- if(!r){r={x:Number(p.x||arena.w*.5),y:Number(p.y||arena.h*.5),tx:Number(p.x||arena.w*.5),ty:Number(p.y||arena.h*.5),angle:Number(p.angle||0),name:p.name||'Player',hp:Number(p.hp||100),weapon:p.weapon||'Rose Blade',t:0};mp.remotes.set(p.id,r)}
- r.tx=Number(p.x??r.tx);r.ty=Number(p.y??r.ty);r.angle=Number(p.angle??r.angle);r.name=p.name||r.name;r.hp=Number(p.hp??r.hp);r.weapon=p.weapon||r.weapon;r.t=.2;
-}
-function mpRemoteAttack(p){
- const r=mp.remotes.get(p.id);if(r){r.angle=Number(p.angle||r.angle);r.t=.25}
-}
-function mpBroadcastPose(now){
- if(!mp.connected||!arena.running||now-mp.lastPose<50)return;
- mp.lastPose=now;
- mpSend({type:'pose',room:mp.room,id:mp.id,name:mp.name,x:Math.round(arena.player.x*10)/10,y:Math.round(arena.player.y*10)/10,angle:arena.player.angle,hp:Math.round(arena.player.hp),weapon:arenaState.activeWeapon});
-}
-function mpBroadcastAttack(angle){
- if(!mp.connected)return;
- const now=performance.now();if(now-mp.lastAttack<35)return;mp.lastAttack=now;
- mpSend({type:'attack',room:mp.room,id:mp.id,name:mp.name,angle,weapon:arenaState.activeWeapon});
-}
-function drawRemotePlayers(){
- if(!mp.mode)return;
- for(const r of mp.remotes.values()){
-   r.x+=(r.tx-r.x)*.22;r.y+=(r.ty-r.y)*.22;r.t=Math.max(0,r.t-.016);
-   ac.save();ac.translate(r.x,r.y);
-   ac.globalAlpha=.92;ac.shadowColor='#8ed8ff';ac.shadowBlur=18;
-   ac.fillStyle='#8ed8ff';ac.beginPath();ac.arc(0,-20,11,0,7);ac.fill();
-   ac.shadowBlur=0;ac.fillStyle='#dff7ff';ac.fillRect(-10,-8,20,30);
-   ac.fillStyle='#2d6178';ac.fillRect(-10,22,7,19);ac.fillRect(3,22,7,19);
-   ac.fillStyle='#0a1520';ac.fillRect(-28,-48,56,6);
-   ac.fillStyle='#78dcff';ac.fillRect(-28,-48,56*Math.max(0,Math.min(1,r.hp/100)),6);
-   ac.strokeStyle='#bcefff';ac.lineWidth=1;ac.strokeRect(-28,-48,56,6);
-   const a=r.angle||0;ac.strokeStyle='#fff';ac.lineWidth=4;ac.beginPath();ac.moveTo(Math.cos(a)*4,Math.sin(a)*4);ac.lineTo(Math.cos(a)*52,Math.sin(a)*52);ac.stroke();
-   ac.fillStyle='#d8f7ff';ac.font='bold 10px Arial';ac.textAlign='center';ac.fillText(r.name,0,-59);
-   ac.restore();
- }
-}
-/* Wrap the existing draw function so remote players are rendered after the local arena. */
-const _drawArenaOriginal=drawArena;
-drawArena=function(){_drawArenaOriginal();drawRemotePlayers()};
-
-/* Multiplayer mode can still use the normal PvE arena; the remote players are
-   additional live players. This avoids touching the existing progression system. */
-const _startArenaOriginal=startArena;
-startArena=function(){
- _startArenaOriginal();
- mpRefreshBadge();
- if(mp.mode)mpSetStatus(mp.connected?'Connected • room '+mp.room:'Not connected — open Multiplayer settings.');
-};
-const _endArenaOriginal=endArena;
-endArena=function(){
- if(mp.connected)mpSend({type:'leave',room:mp.room,id:mp.id});
- _endArenaOriginal();mpDisconnect(false);
-};
-
-const _arenaLoopOriginal=arenaLoop;
-arenaLoop=function(t){
- mpBroadcastPose(t);
- _arenaLoopOriginal(t);
-};
-
-/* Send every local swing to the room without changing combat logic. */
-const _slashOriginal=slash;
-slash=function(angle){_slashOriginal(angle);mpBroadcastAttack(angle)};
-
-$('arenaMpChoice').onclick=()=>{
- gameMenu.classList.add('hidden');
- mpLoadConfig();
- mpModal.classList.remove('hidden');
-};
-$('lsaMpConnect').onclick=mpConnect;
-$('lsaMpRandom').onclick=mpRandomRoom;
-$('lsaMpLeave').onclick=()=>mpDisconnect();
-$('lsaMpClose').onclick=()=>mpModal.classList.add('hidden');
-$('lsaMpCopy').onclick=async()=>{
- const invite=location.origin+location.pathname+'?room='+encodeURIComponent(mpRoom.value);
- try{await navigator.clipboard.writeText(invite);mpSetStatus('Invite copied: '+invite,'ok')}catch(e){mpSetStatus(invite,'ok')}
-};
-mpRoom.addEventListener('input',()=>{$('lsaMpCopy').disabled=!mpRoom.value.trim()});
-
+ function broadcastState(){if(!coop.on||!coop.host)return;send({t:'state',room:coop.room,host:coop.id,name:coop.name,wave:arena.wave,player:{x:arena.player.x,y:arena.player.y,hp:arena.player.hp,maxHp:combatStats().maxHp,angle:arena.player.angle},enemies:arena.enemies.map(e=>({id:e.id,x:e.x,y:e.y,hp:e.hp,maxHp:e.maxHp,type:e.type||e.kind,kind:e.kind})),projectiles:arena.projectiles.map(q=>({x:q.x,y:q.y,vx:q.vx,vy:q.vy,life:q.life,owner:q.owner,kind:q.kind}))})}
+ function remoteAttack(id,angle){const q=coop.peers[id];if(!q)return; const fake={x:q.x,y:q.y}; let hits=0; for(const e of [...arena.enemies]){const dx=e.x-fake.x,dy=e.y-fake.y,d=Math.hypot(dx,dy);let da=Math.atan2(dy,dx)-angle;da=Math.atan2(Math.sin(da),Math.cos(da));if(d<125&&Math.abs(da)<.95){damageEnemy(e,combatStats().atk*.85);hits++}} if(hits)arenaLog((q.name||'Partner')+' hit '+hits+' enemy'+(hits>1?'ies':'')+'!')}
+ const oldUpdate=updateArena, oldDraw=drawArena;
+ updateArena=function(dt){if(!coop.on||coop.host){oldUpdate(dt);return} const p=arena.player,s=combatStats();let dx=0,dy=0;if(arena.keys.w||arena.keys.ArrowUp)dy--;if(arena.keys.s||arena.keys.ArrowDown)dy++;if(arena.keys.a||arena.keys.ArrowLeft)dx--;if(arena.keys.d||arena.keys.ArrowRight)dx++;if(dx||dy){const l=Math.hypot(dx,dy);p.x+=dx/l*s.spd*60*dt;p.y+=dy/l*s.spd*60*dt}p.x=Math.max(30,Math.min(arena.w-30,p.x));p.y=Math.max(62,Math.min(arena.h-30,p.y));p.attackCd=Math.max(0,p.attackCd-dt);p.slashT=Math.max(0,p.slashT-dt);p.skillCd=Math.max(0,p.skillCd-dt);if(sock&&performance.now()-coop.lastSend>50){send({t:'move',room:coop.room,id:coop.id,name:coop.name,x:p.x,y:p.y,hp:p.hp,maxHp:s.maxHp,angle:p.angle});coop.lastSend=performance.now()}};
+ drawArena=function(){oldDraw(); if(!coop.on)return; for(const id in coop.peers){const q=coop.peers[id];if(q.x==null)continue;ac.save();ac.translate(q.x,q.y);ac.fillStyle='#7edcff';ac.shadowColor='#7edcff';ac.shadowBlur=18;ac.beginPath();ac.arc(0,0,18,0,Math.PI*2);ac.fill();ac.shadowBlur=0;ac.fillStyle='#fff';ac.font='bold 11px Arial';ac.textAlign='center';ac.fillText(q.name||'Partner',0,-30);ac.fillStyle='#09111a';ac.fillRect(-28,-24,56,5);ac.fillStyle='#7edcff';ac.fillRect(-28,-24,56*Math.max(0,Math.min(1,(q.hp||0)/(q.maxHp||100))),5);ac.restore()}};
+ const oldSlash=slash; slash=function(angle){oldSlash(angle);if(coop.on&&sock&&sock.readyState===1){send({t:'attack',room:coop.room,id:coop.id,name:coop.name,angle,x:arena.player.x,y:arena.player.y})}};
+ const oldEnd=endArena; endArena=function(){if(sock){try{send({t:'leave',room:coop.room,id:coop.id});sock.close()}catch(e){}}coop.on=false;setBadge();oldEnd()};
+ $c('lsaCoopBtn').onclick=()=>overlay.classList.remove('hidden'); $c('coopClose').onclick=()=>overlay.classList.add('hidden'); $c('coopCreate').onclick=()=>connect(true); $c('coopJoin').onclick=()=>connect(false);
+ setInterval(()=>{if(coop.on&&coop.host&&performance.now()-coop.lastState>100){broadcastState();coop.lastState=performance.now()}},50);
+})();
 </script>
 </body>
 </html>
