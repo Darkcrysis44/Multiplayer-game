@@ -929,6 +929,7 @@ function drawEnemy(e){
 /* ===== Cloudflare Durable Object Online Co-op ===== */
 let coopSocket=null, coopId=null, coopRoom='', coopHost=false, coopPeers={}, coopLastNet=0, coopLastState=0, coopStarted=false;
 let coopClockOffset=0, coopStartTimer=null, coopOpenedFromRunning=false;
+let coopRemoteTargets={}, coopUpgradeOffer=null, coopUpgradeChosen=false;
 function coopUrl(room){
   const proto=location.protocol==='https:'?'wss:':'ws:';
   return proto+'//'+location.host+'/ws?room='+encodeURIComponent(room);
@@ -970,7 +971,7 @@ function coopHandle(m){
   }
   if(m.type==='players'){coopRenderPlayers(m.players);return;}
   if(m.type==='gameStart'){
-    coopStarted=true;
+    coopStarted=true; coopUpgradeOffer=null; coopUpgradeChosen=false;
     const startAt=m.startAt||Date.now()+1000;
     const localStart=startAt-coopClockOffset;
     clearTimeout(coopStartTimer);
@@ -980,25 +981,65 @@ function coopHandle(m){
     return;
   }
   if(m.type==='gameStop'){coopStarted=false;clearTimeout(coopStartTimer);arena.running=false;showCoopStart(true);updateCoopLobby();return;}
-  if(m.from===coopId)return;
+  if(m.type==='upgradeOffer'){
+    coopUpgradeOffer={id:m.offerId,choices:m.choices||[]};
+    coopUpgradeChosen=false;
+    arena.running=false;
+    showUpgrade(coopUpgradeOffer.choices,true);
+    coopSetStatus('✨ Choose your upgrade');
+    return;
+  }
+  if(m.type==='upgradeProgress'){
+    const st=$('coopStartStatus'); if(st) st.textContent='Upgrade chosen by '+(m.picked||0)+' / '+(m.total||1)+' players';
+    return;
+  }
+  if(m.type==='upgradeReady'){
+    applyCoopUpgradeReady(m.wave);
+    return;
+  }
+  if(m.type==='attack'){
+    if(m.from!==coopId) remoteCoopSlash(m.x,m.y,m.angle,!!coopHost);
+    return;
+  }
   if(m.type==='pos'){
     const p=coopPeers[m.from]||(coopPeers[m.from]={id:m.from,name:'Player',x:80,y:100,angle:0});
-    p.x=Number(m.x)||80;p.y=Number(m.y)||100;p.angle=Number(m.angle)||0;p.name=m.name||p.name;
-  } else if(m.type==='attack' && coopHost && coopStarted){
-    remoteCoopSlash(m.x,m.y,m.angle);
-  } else if(m.type==='state' && !coopHost && coopStarted){
-    if(Array.isArray(m.enemies))arena.enemies=m.enemies.map(e=>Object.assign({},e,{bossDef:e.bossDef||null}));
+    p.targetX=Number.isFinite(Number(m.x))?Number(m.x):p.x; p.targetY=Number.isFinite(Number(m.y))?Number(m.y):p.y; p.targetAngle=Number(m.angle)||0; p.name=m.name||p.name;
+    return;
+  }
+  if(m.type==='state' && !coopHost && coopStarted){
+    if(Array.isArray(m.enemies)){
+      const incoming=new Set();
+      for(const e of m.enemies){
+        if(!e.id) continue;
+        incoming.add(e.id);
+        let local=arena.enemies.find(x=>x.id===e.id);
+        if(!local){
+          local=Object.assign({},e,{bossDef:e.bossDef||null,targetX:e.x,targetY:e.y});
+          arena.enemies.push(local);
+        } else {
+          // Keep the current render position; only move the network target. This removes the visible 10-12Hz teleport/jitter.
+          local.targetX=e.x; local.targetY=e.y;
+          local.hp=e.hp; local.maxHp=e.maxHp; local.r=e.r; local.speed=e.speed; local.atk=e.atk;
+          local.hit=e.hit; local.attack=e.attack; local.variant=e.variant; local.type=e.type; local.boss=e.boss;
+          local.bossIndex=e.bossIndex; local.specialCd=e.specialCd; local.poison=e.poison; local.name=e.name; local.rarity=e.rarity; local.bossDef=e.bossDef||null;
+        }
+      }
+      arena.enemies=arena.enemies.filter(e=>!e.id||incoming.has(e.id));
+    }
     if(Number.isFinite(m.wave))arena.wave=m.wave;
-    if(m.player){arena.player.hp=m.player.hp;}
+    if(m.player)arena.player.hp=m.player.hp;
   }
 }
-function remoteCoopSlash(x,y,a){
-  const cs=combatStats();
-  for(const e of [...arena.enemies]){
-    const dd=Math.hypot(e.x-x,e.y-y);let da=Math.atan2(e.y-y,e.x-x)-a;da=Math.atan2(Math.sin(da),Math.cos(da));
-    if(dd<165&&Math.abs(da)<.65)damageEnemy(e,cs.atk);
+function remoteCoopSlash(x,y,a,applyDamage){
+  if(applyDamage){
+    const cs=combatStats();
+    for(const e of [...arena.enemies]){
+      const dd=Math.hypot(e.x-x,e.y-y);let da=Math.atan2(e.y-y,e.x-x)-a;da=Math.atan2(Math.sin(da),Math.cos(da));
+      if(dd<165&&Math.abs(da)<.65)damageEnemy(e,cs.atk);
+    }
   }
-  arena.slashes.push({x,y,angle:a,t:.35});burst(x,y,10,'slash');
+  arena.slashes.push({x,y,angle:a,t:.22,remote:true});
+  burst(x,y,8,'slash');
 }
 function coopDrawPlayers(){
   if(!coopSocket)return;
@@ -1010,13 +1051,34 @@ function coopDrawPlayers(){
     ac.fillStyle='#fff';ac.font='bold 10px Arial';ac.textAlign='center';ac.fillText(p.name||'Player',0,-40);ac.restore();
   }
 }
+function coopRemoteVisualTick(dt){
+  if(!coopSocket)return;
+  if(!coopHost){
+    for(const p of Object.values(coopPeers)){
+      if(Number.isFinite(p.targetX)){const k=Math.min(1,dt*14);p.x+=(p.targetX-p.x)*k;p.y+=(p.targetY-p.y)*k;p.angle=p.targetAngle||p.angle||0;}
+    }
+  }
+  if(!coopHost){ for(const e of arena.enemies){
+    if(Number.isFinite(e.targetX)){
+      const k=Math.min(1,dt*12); e.x+=(e.targetX-e.x)*k; e.y+=(e.targetY-e.y)*k;
+    }
+    e.hit=Math.max(0,(e.hit||0)-dt);
+    e.attack=Math.max(0,(e.attack||0)-dt);
+    e.specialCd=Math.max(0,(e.specialCd||0)-dt);
+  }
+  for(const q of arena.slashes)q.t-=dt;
+  arena.slashes=arena.slashes.filter(q=>q.t>0);
+  for(const q of arena.particles){q.x+=q.vx*60*dt;q.y+=q.vy*60*dt;q.vx*=.96;q.vy*=.96;q.life-=dt;}
+  arena.particles=arena.particles.filter(q=>q.life>0); }
+}
+
 function coopTick(){
   if(!coopSocket||coopSocket.readyState!==1)return;
   const p=arena.player,now=performance.now();
   if(now-coopLastNet>60){coopLastNet=now;coopSend({type:'pos',name:$('coopName')?.value||'Player',x:p.x,y:p.y,angle:p.angle||0});}
-  if(coopHost&&coopStarted&&now-coopLastState>100){
+  if(coopHost&&coopStarted&&now-coopLastState>120){
     coopLastState=now;
-    const enemies=arena.enemies.map(e=>({x:e.x,y:e.y,hp:e.hp,maxHp:e.maxHp,r:e.r,speed:e.speed,atk:e.atk,hit:e.hit,attack:e.attack,variant:e.variant,type:e.type,boss:e.boss,bossIndex:e.bossIndex,specialCd:e.specialCd,poison:e.poison,name:e.name,rarity:e.rarity,bossDef:e.bossDef?{name:e.bossDef.name}:null}));
+    const enemies=arena.enemies.map((e,i)=>({id:e.id||(e.id='e'+i+'_'+Math.random().toString(36).slice(2,8)),x:e.x,y:e.y,hp:e.hp,maxHp:e.maxHp,r:e.r,speed:e.speed,atk:e.atk,hit:e.hit,attack:e.attack,variant:e.variant,type:e.type,boss:e.boss,bossIndex:e.bossIndex,specialCd:e.specialCd,poison:e.poison,name:e.name,rarity:e.rarity,bossDef:e.bossDef?{name:e.bossDef.name}:null}));
     coopSend({type:'state',wave:arena.wave,enemies,player:{hp:arena.player.hp}});
   }
 }
@@ -1032,6 +1094,7 @@ function resetArenaRun(){
   arena.running=false;arena.wave=1;arena.spawned=0;arena.enemies=[];arena.projectiles=[];arena.particles=[];arena.slashes=[];resetWaveUpgrades();arena.player={x:0,y:0,hp:combatStats().maxHp,dir:1,angle:0,attackCd:0,slashT:0,inv:0,skillCd:0};resizeArena();arenaStats();
 }
 function beginCoopBattle(announce=true){
+  coopRemoteTargets={}; coopUpgradeOffer=null; coopUpgradeChosen=false;
   if(arenaModal.classList.contains('hidden'))arenaModal.classList.remove('hidden');
   $('coopModal').classList.add('hidden');showCoopStart(false);arena.running=true;initArenaAudio();arenaStats();arenaLog('⚔️ Co-op battle started!');
   if(announce)coopSend({type:'start'});
@@ -1083,6 +1146,7 @@ function arenaSimulationTick(now){
   let steps=0;
   while(arenaSimAccum>=step && steps<150){
     coopTick();
+    coopRemoteVisualTick(step);
     updateArena(step);
     arenaSimAccum-=step;
     steps++;
@@ -1115,7 +1179,59 @@ function arenaLoop(){
 }
 function startArena(){initArenaAudio();arenaModal.classList.remove('hidden');$('lsaArchive').classList.add('hidden');resetArenaRun();arena.running=true;arenaStats();arenaLog('Enter the arena. Broken-heart fighters are coming...');requestAnimationFrame(arenaLoop)}
 function endArena(){arena.running=false;arenaModal.classList.add('hidden');showCoopStart(false);coopStarted=false;try{if(coopSocket)coopSocket.close()}catch(e){}coopSocket=null;coopId=null;coopPeers={};coopHost=false;saveArena()}
-function showUpgrade(){const grid=$('lsaUpgradeGrid');grid.innerHTML='';const m=arenaState.mult;const choices=[['❤️','Vitality','Max HP +'+Math.round(25*m),()=>arenaState.waveUpgrades.hp+=Math.round(25*m)],['⚔️','Sharpness','Attack +'+(4*m).toFixed(1),()=>arenaState.waveUpgrades.atk+=4*m],['💨','Grace','Speed +'+(.35*m).toFixed(2),()=>arenaState.waveUpgrades.spd+=.35*m],['✨','True Love','Crit +5%',()=>arenaState.waveUpgrades.crit+=.05],['🛡️','Protection','Armor +'+(3*m).toFixed(1),()=>arenaState.waveUpgrades.armor+=3*m],['💗','Second Heart','Heal 35% HP',()=>arena.player.hp=Math.min(combatStats().maxHp,arena.player.hp+combatStats().maxHp*.35)]];choices.sort(()=>Math.random()-.5).slice(0,3).forEach(c=>{const d=document.createElement('div');d.className='lsa-item';d.innerHTML='<div class="ico">'+c[0]+'</div><b>'+c[1]+'</b><span>'+c[2]+'</span><button>Choose</button>';d.querySelector('button').onclick=()=>{c[3]();arena.wave++;arena.spawned=0;arena.running=true;if(arena.wave%5===0){arenaLog('⚠️ BOSS WAVE '+arena.wave+' — a Broken Heart Lord has appeared!');toast('BOSS WAVE! 👑💔')} $('lsaUpgrade').classList.add('hidden');arenaStats();arenaLog('Upgrade selected: '+c[1]);saveArena()};grid.appendChild(d)});$('lsaUpgrade').classList.remove('hidden')}
+function upgradeChoicesData(){
+  const m=arenaState.mult;
+  const choices=[
+    {id:'hp',icon:'❤️',name:'Vitality',desc:'Max HP +'+Math.round(25*m)},
+    {id:'atk',icon:'⚔️',name:'Sharpness',desc:'Attack +'+(4*m).toFixed(1)},
+    {id:'spd',icon:'💨',name:'Grace',desc:'Speed +'+(.35*m).toFixed(2)},
+    {id:'crit',icon:'✨',name:'True Love',desc:'Crit +5%'},
+    {id:'armor',icon:'🛡️',name:'Protection',desc:'Armor +'+(3*m).toFixed(1)},
+    {id:'heal',icon:'💗',name:'Second Heart',desc:'Heal 35% HP'}
+  ];
+  return choices.sort(()=>Math.random()-.5).slice(0,3);
+}
+function applyUpgradeChoice(id){
+  const m=arenaState.mult;
+  if(id==='hp')arenaState.waveUpgrades.hp+=Math.round(25*m);
+  else if(id==='atk')arenaState.waveUpgrades.atk+=4*m;
+  else if(id==='spd')arenaState.waveUpgrades.spd+=.35*m;
+  else if(id==='crit')arenaState.waveUpgrades.crit+=.05;
+  else if(id==='armor')arenaState.waveUpgrades.armor+=3*m;
+  else if(id==='heal')arena.player.hp=Math.min(combatStats().maxHp,arena.player.hp+combatStats().maxHp*.35);
+}
+function applyCoopUpgradeReady(wave){
+  arena.wave=wave||arena.wave+1; arena.spawned=0; arena.running=true;
+  $('lsaUpgrade').classList.add('hidden'); coopUpgradeOffer=null; coopUpgradeChosen=false;
+  if(arena.wave%5===0){arenaLog('⚠️ BOSS WAVE '+arena.wave+' — a Broken Heart Lord has appeared!');toast('BOSS WAVE! 👑💔');}
+  arenaStats(); arenaLog('Upgrade selected — next wave begins!'); saveArena();
+}
+function showUpgrade(choices=null,fromNetwork=false){
+  const grid=$('lsaUpgradeGrid');grid.innerHTML='';
+  choices=choices||upgradeChoicesData();
+  choices.forEach(c=>{
+    const d=document.createElement('div');d.className='lsa-item';
+    d.innerHTML='<div class="ico">'+c.icon+'</div><b>'+c.name+'</b><span>'+c.desc+'</span><button>Choose</button>';
+    d.querySelector('button').onclick=()=>{
+      if(coopSocket&&coopStarted){
+        if(coopUpgradeChosen)return;
+        coopUpgradeChosen=true; applyUpgradeChoice(c.id); d.querySelector('button').textContent='✓ SELECTED'; d.querySelector('button').disabled=true;
+        coopSend({type:'upgradePick',offerId:coopUpgradeOffer?.id||0,choice:c.id,wave:arena.wave+1});
+        coopSetStatus('⏳ Waiting for the other player(s)…');
+      } else {
+        applyUpgradeChoice(c.id); arena.wave++;arena.spawned=0;arena.running=true;
+        if(arena.wave%5===0){arenaLog('⚠️ BOSS WAVE '+arena.wave+' — a Broken Heart Lord has appeared!');toast('BOSS WAVE! 👑💔');}
+        $('lsaUpgrade').classList.add('hidden');arenaStats();arenaLog('Upgrade selected: '+c.name);saveArena();
+      }
+    };
+    grid.appendChild(d);
+  });
+  $('lsaUpgrade').classList.remove('hidden');
+  if(!fromNetwork && coopSocket&&coopHost&&coopStarted){
+    coopUpgradeOffer={id:Date.now(),choices}; coopUpgradeChosen=false;
+    coopSend({type:'upgradeOffer',offerId:coopUpgradeOffer.id,choices});
+  }
+}
 function useSkill(){const sk=arenaState.skills[0];if(!arena.running||!sk||arena.player.skillCd>0)return;const p=arena.player;if(sk.id==='nova'){arena.player.skillCd=8;const cs=combatStats();arena.shake=12;for(const e of [...arena.enemies]){const d=Math.hypot(e.x-p.x,e.y-p.y);if(d<190){damageEnemy(e,cs.atk*3)}}burst(p.x,p.y,40,'death');sfx('level');toast('HEART NOVA! 💗')}else if(sk.id==='barrage'){arena.player.skillCd=10;const cs=combatStats();for(let j=-2;j<=2;j++){const a=p.angle+j*.18;arena.slashes.push({x:p.x,y:p.y,angle:a,t:.35});for(const e of [...arena.enemies]){const dd=Math.hypot(e.x-p.x,e.y-p.y);let da=Math.atan2(e.y-p.y,e.x-p.x)-a;da=Math.atan2(Math.sin(da),Math.cos(da));if(dd<165&&Math.abs(da)<.65)damageEnemy(e,cs.atk*2.2)}}burst(p.x,p.y,35,'slash');sfx('level');toast('ROSE BARRAGE! 🌹')}else if(sk.id==='moon'){arena.player.skillCd=7;const cs=combatStats();const a=p.angle;arena.projectiles.push({x:p.x,y:p.y,vx:Math.cos(a)*7,vy:Math.sin(a)*7,life:2.2,damage:cs.atk*5,angle:a,owner:'playerSkill',wide:true});arena.slashes.push({x:p.x,y:p.y,angle:a,t:.35});burst(p.x+Math.cos(a)*30,p.y+Math.sin(a)*30,24,'slash');sfx('level');toast('MOON SLASH! 🌙')}else if(sk.id==='storm'){arena.player.skillCd=12;const cs=combatStats();for(let i=0;i<10;i++){const a=Math.random()*Math.PI*2,d=70+Math.random()*220;arena.projectiles.push({x:p.x+Math.cos(a)*d,y:p.y+Math.sin(a)*d,vx:0,vy:0,life:1.0,damage:cs.atk*1.5,angle:a,owner:'playerSkill',rain:true,t:0});}for(const e of [...arena.enemies]){if(Math.hypot(e.x-p.x,e.y-p.y)<260)damageEnemy(e,cs.atk*2.5)}burst(p.x,p.y,45,'death');sfx('level');toast('HEARTSTORM! 💞')}else if(sk.id==='dash'){arena.player.skillCd=5;const cs=combatStats();const nx=p.x+Math.cos(p.angle)*180,ny=p.y+Math.sin(p.angle)*180;p.x=Math.max(30,Math.min(arena.w-30,nx));p.y=Math.max(62,Math.min(arena.h-30,ny));arena.slashes.push({x:p.x,y:p.y,angle:p.angle,t:.3});for(const e of [...arena.enemies]){if(Math.hypot(e.x-p.x,e.y-p.y)<75)damageEnemy(e,cs.atk*2)}burst(p.x,p.y,28,'slash');sfx('slash');toast('LOVE DASH! ✨')}arenaStats()}
 const shopItems=[
  ['⚔️','Crimson Rose Blade','Attack +8',90,'sword','Crimson Rose Blade',()=>arenaState.stats.atk+=8*arenaState.mult],
