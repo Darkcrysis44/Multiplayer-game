@@ -1064,7 +1064,55 @@ slash=function(angle){
   originalSlash(angle);
   if(coopSocket&&coopSocket.readyState===1&&coopStarted)coopSend({type:'attack',x:arena.player.x,y:arena.player.y,angle});
 };
-function arenaLoop(t){coopTick();const dt=Math.min(.033,(t-arena.last)/1000||0);arena.last=t;updateArena(dt);drawArena();if(arenaModal&&!arenaModal.classList.contains('hidden'))requestAnimationFrame(arenaLoop)}
+/*
+ * Keep the simulation independent from requestAnimationFrame.
+ * Browsers pause/throttle RAF when a tab/window is in the background, which
+ * used to make the host's authoritative co-op world freeze when Alt-Tabbing.
+ * The simulation now runs from a real-time timer with a fixed-step accumulator;
+ * RAF is used only for rendering. If the browser throttles the timer, the
+ * accumulated elapsed time is processed in small steps when the timer fires.
+ */
+let arenaSimTimer=null, arenaSimLast=0, arenaSimAccum=0;
+function arenaSimulationTick(now){
+  if(!arena.running){ arenaSimLast=now; arenaSimAccum=0; return; }
+  if(!arenaSimLast) arenaSimLast=now;
+  let elapsed=Math.max(0,Math.min(2.5,(now-arenaSimLast)/1000));
+  arenaSimLast=now;
+  arenaSimAccum+=elapsed;
+  const step=1/60;
+  let steps=0;
+  while(arenaSimAccum>=step && steps<150){
+    coopTick();
+    updateArena(step);
+    arenaSimAccum-=step;
+    steps++;
+  }
+  /* Never let a long browser suspension create an unbounded catch-up loop. */
+  if(steps>=150) arenaSimAccum=0;
+}
+function arenaRenderLoop(){
+  drawArena();
+  if(arenaModal&&!arenaModal.classList.contains('hidden')) requestAnimationFrame(arenaRenderLoop);
+}
+function startArenaSimulation(){
+  if(arenaSimTimer) clearInterval(arenaSimTimer);
+  arenaSimLast=performance.now();
+  arenaSimAccum=0;
+  arenaSimTimer=setInterval(()=>arenaSimulationTick(performance.now()),16);
+}
+function stopArenaSimulation(){
+  if(arenaSimTimer){clearInterval(arenaSimTimer);arenaSimTimer=null;}
+  arenaSimLast=0;arenaSimAccum=0;
+}
+document.addEventListener('visibilitychange',()=>{
+  /* Do not pause the game when the user Alt-Tabs/minimizes the window.
+     When the tab becomes visible, immediately process the elapsed real time. */
+  if(!document.hidden) arenaSimulationTick(performance.now());
+});
+function arenaLoop(){
+  if(!arenaSimTimer) startArenaSimulation();
+  arenaRenderLoop();
+}
 function startArena(){initArenaAudio();arenaModal.classList.remove('hidden');$('lsaArchive').classList.add('hidden');resetArenaRun();arena.running=true;arenaStats();arenaLog('Enter the arena. Broken-heart fighters are coming...');requestAnimationFrame(arenaLoop)}
 function endArena(){arena.running=false;arenaModal.classList.add('hidden');showCoopStart(false);coopStarted=false;try{if(coopSocket)coopSocket.close()}catch(e){}coopSocket=null;coopId=null;coopPeers={};coopHost=false;saveArena()}
 function showUpgrade(){const grid=$('lsaUpgradeGrid');grid.innerHTML='';const m=arenaState.mult;const choices=[['❤️','Vitality','Max HP +'+Math.round(25*m),()=>arenaState.waveUpgrades.hp+=Math.round(25*m)],['⚔️','Sharpness','Attack +'+(4*m).toFixed(1),()=>arenaState.waveUpgrades.atk+=4*m],['💨','Grace','Speed +'+(.35*m).toFixed(2),()=>arenaState.waveUpgrades.spd+=.35*m],['✨','True Love','Crit +5%',()=>arenaState.waveUpgrades.crit+=.05],['🛡️','Protection','Armor +'+(3*m).toFixed(1),()=>arenaState.waveUpgrades.armor+=3*m],['💗','Second Heart','Heal 35% HP',()=>arena.player.hp=Math.min(combatStats().maxHp,arena.player.hp+combatStats().maxHp*.35)]];choices.sort(()=>Math.random()-.5).slice(0,3).forEach(c=>{const d=document.createElement('div');d.className='lsa-item';d.innerHTML='<div class="ico">'+c[0]+'</div><b>'+c[1]+'</b><span>'+c[2]+'</span><button>Choose</button>';d.querySelector('button').onclick=()=>{c[3]();arena.wave++;arena.spawned=0;arena.running=true;if(arena.wave%5===0){arenaLog('⚠️ BOSS WAVE '+arena.wave+' — a Broken Heart Lord has appeared!');toast('BOSS WAVE! 👑💔')} $('lsaUpgrade').classList.add('hidden');arenaStats();arenaLog('Upgrade selected: '+c[1]);saveArena()};grid.appendChild(d)});$('lsaUpgrade').classList.remove('hidden')}
