@@ -375,7 +375,7 @@ body:before{
 .lsa-shop-tab{border:1px solid #ff9db555;background:#160d18;color:#ffdce6;border-radius:10px;padding:8px 12px;cursor:pointer;font-weight:700}
 .lsa-shop-tab.active{background:#ff668f33;border-color:#ff9db5aa;box-shadow:0 0 12px #ff6e9422}
 
-.coop-start-overlay{position:absolute;inset:0;z-index:20;display:grid;place-items:center;background:#05040bd9;backdrop-filter:blur(7px);border-radius:24px}.coop-start-overlay.hidden{display:none}.coop-start-card{width:min(440px,90%);padding:28px;border:1px solid #ff9fba77;border-radius:24px;background:linear-gradient(145deg,#1d0d1a,#0b0d18);box-shadow:0 20px 70px #000b;text-align:center;color:#fff}.coop-start-card h2{margin:0 0 8px;font-size:30px;color:#ffdce7;text-shadow:0 0 18px #ff6088}.coop-start-card p{margin:0 0 18px;color:#ffd9e5;opacity:.78;line-height:1.5}.coop-start-card .lsa-btn{min-width:190px}.coop-start-status{margin-top:14px;font:12px Arial;color:#ffb8ca;opacity:.9}
+.coop-start-overlay{position:absolute;inset:0;z-index:999;display:grid;place-items:center;background:#05040bd9;backdrop-filter:blur(7px);border-radius:24px}.coop-start-overlay.hidden{display:none}.coop-start-card{width:min(440px,90%);padding:28px;border:1px solid #ff9fba77;border-radius:24px;background:linear-gradient(145deg,#1d0d1a,#0b0d18);box-shadow:0 20px 70px #000b;text-align:center;color:#fff}.coop-start-card h2{margin:0 0 8px;font-size:30px;color:#ffdce7;text-shadow:0 0 18px #ff6088}.coop-start-card p{margin:0 0 18px;color:#ffd9e5;opacity:.78;line-height:1.5}.coop-start-card .lsa-btn{min-width:190px}.coop-start-status{margin-top:14px;font:12px Arial;color:#ffb8ca;opacity:.9}
 .coop-modal{position:fixed;inset:0;z-index:9999;display:flex;align-items:center;justify-content:center;background:#05040bcc;backdrop-filter:blur(8px)}
 .coop-modal.hidden{display:none}.coop-box{width:min(440px,92vw);padding:24px;border:1px solid #ff739866;border-radius:22px;background:linear-gradient(145deg,#17101e,#0b0d18);box-shadow:0 20px 80px #000b;color:#fff;font-family:Arial,sans-serif}.coop-title{font-size:22px;font-weight:800;margin-bottom:7px}.coop-sub{opacity:.7;line-height:1.45;margin-bottom:18px}.coop-box label{display:block;font-size:12px;opacity:.7;margin:9px 0 5px}.coop-box input{width:100%;padding:11px 12px;border-radius:10px;border:1px solid #ffffff22;background:#ffffff0d;color:#fff;outline:none}.coop-row{display:flex;gap:8px;margin-top:10px}.coop-row input{flex:1}.coop-row .lsa-btn{flex:1}.coop-status{margin-top:15px;padding:10px;border-radius:10px;background:#ffffff0a;font-size:13px}.coop-players{margin:10px 0;display:flex;flex-wrap:wrap;gap:7px}.coop-player{padding:7px 10px;border-radius:999px;background:#ff6f9820;border:1px solid #ff6f9840;font-size:12px}
 </style>
@@ -928,118 +928,142 @@ function drawEnemy(e){
 
 /* ===== Cloudflare Durable Object Online Co-op ===== */
 let coopSocket=null, coopId=null, coopRoom='', coopHost=false, coopPeers={}, coopLastNet=0, coopLastState=0, coopStarted=false;
+let coopClockOffset=0, coopStartTimer=null, coopOpenedFromRunning=false;
 function coopUrl(room){
   const proto=location.protocol==='https:'?'wss:':'ws:';
   return proto+'//'+location.host+'/ws?room='+encodeURIComponent(room);
 }
 function coopSetStatus(t){const el=$('coopStatus');if(el)el.textContent=t}
 function coopRenderPlayers(players){
-  coopPeers={}; (players||[]).forEach(p=>{coopPeers[p.id]={id:p.id,name:p.name,x:80,y:100,angle:0}});
-  const g=$('coopPlayers'); if(g)g.innerHTML=(players||[]).map(p=>'<span class="coop-player">'+(p.id===coopId?'💗 ':'')+p.name+'</span>').join('');
+  coopPeers={};
+  (players||[]).forEach(p=>{if(p.id!==coopId)coopPeers[p.id]={id:p.id,name:p.name,x:arena.player?.x||80,y:arena.player?.y||100,angle:0,ready:false}});
+  const g=$('coopPlayers');
+  if(g)g.innerHTML=(players||[]).map(p=>'<span class="coop-player">'+(p.id===coopId?'💗 ':'')+(p.name||'Player')+'</span>').join('');
+  updateCoopLobby();
 }
 function coopConnect(){
   const room=($('coopRoom').value||'LOVE').toUpperCase().replace(/[^A-Z0-9_-]/g,'').slice(0,24)||'LOVE';
-  const name=($('coopName').value||'Player').slice(0,20);
+  const name=($('coopName').value||'Player').slice(0,20)||'Player';
   coopRoom=room;
-  try{if(coopSocket)coopSocket.close();}catch(e){}
+  try{if(coopSocket)coopSocket.close()}catch(e){}
   coopSocket=new WebSocket(coopUrl(room));
   coopSetStatus('Connecting to room '+room+'…');
-  coopSocket.onopen=()=>{coopSocket.send(JSON.stringify({type:'join',name}));coopSetStatus('🟢 Connected • Room: '+room);toast('Online co-op connected 🌐')};
-  coopSocket.onclose=()=>{coopSetStatus('🔴 Disconnected');coopSocket=null};
+  coopSocket.onopen=()=>{
+    coopSocket.send(JSON.stringify({type:'join',name}));
+    coopSetStatus('🟢 Connected • Room: '+room);
+    $('coopModal').classList.add('hidden');
+    showCoopStart(true);
+    updateCoopLobby();
+    toast('Online co-op connected 🌐');
+  };
+  coopSocket.onclose=()=>{coopSetStatus('🔴 Disconnected');coopSocket=null;showCoopStart(false)};
   coopSocket.onerror=()=>coopSetStatus('⚠️ Connection error');
   coopSocket.onmessage=e=>{try{coopHandle(JSON.parse(e.data))}catch(err){}};
 }
 function coopSend(msg){if(coopSocket&&coopSocket.readyState===1)coopSocket.send(JSON.stringify(msg))}
 function coopHandle(m){
-  if(m.type==='welcome'){coopId=m.id;if(m.started){coopStarted=true;beginCoopBattle(false)}return}
-  if(m.type==='players'){coopRenderPlayers(m.players);updateCoopLobby();return}
+  if(m.type==='welcome'){
+    coopId=m.id;
+    if(m.serverNow) coopClockOffset=m.serverNow-Date.now();
+    updateCoopLobby();
+    return;
+  }
+  if(m.type==='players'){coopRenderPlayers(m.players);return;}
+  if(m.type==='gameStart'){
+    coopStarted=true;
+    const startAt=m.startAt||Date.now()+1000;
+    const localStart=startAt-coopClockOffset;
+    clearTimeout(coopStartTimer);
+    const delay=Math.max(0,localStart-Date.now());
+    coopSetStatus('🟢 Battle starts in '+(delay/1000).toFixed(1)+'s');
+    coopStartTimer=setTimeout(()=>beginCoopBattle(false),delay);
+    return;
+  }
+  if(m.type==='gameStop'){coopStarted=false;clearTimeout(coopStartTimer);arena.running=false;showCoopStart(true);updateCoopLobby();return;}
   if(m.from===coopId)return;
-  if(m.type==='gameStart'){coopStarted=true;beginCoopBattle(false);return}
   if(m.type==='pos'){
     const p=coopPeers[m.from]||(coopPeers[m.from]={id:m.from,name:'Player',x:80,y:100,angle:0});
-    p.x=m.x;p.y=m.y;p.angle=m.angle||0;p.name=m.name||p.name;
-  } else if(m.type==='attack' && coopHost){
+    p.x=Number(m.x)||80;p.y=Number(m.y)||100;p.angle=Number(m.angle)||0;p.name=m.name||p.name;
+  } else if(m.type==='attack' && coopHost && coopStarted){
     remoteCoopSlash(m.x,m.y,m.angle);
-  } else if(m.type==='state' && !coopHost){
-    if(Array.isArray(m.enemies)){
-      arena.enemies=m.enemies.map(e=>Object.assign({},e,{bossDef:e.bossDef||null}));
-    }
-    arena.wave=m.wave||arena.wave;
+  } else if(m.type==='state' && !coopHost && coopStarted){
+    if(Array.isArray(m.enemies))arena.enemies=m.enemies.map(e=>Object.assign({},e,{bossDef:e.bossDef||null}));
+    if(Number.isFinite(m.wave))arena.wave=m.wave;
+    if(m.player){arena.player.hp=m.player.hp;}
   }
 }
 function remoteCoopSlash(x,y,a){
   const cs=combatStats();
   for(const e of [...arena.enemies]){
-    const dd=Math.hypot(e.x-x,e.y-y); let da=Math.atan2(e.y-y,e.x-x)-a;
-    da=Math.atan2(Math.sin(da),Math.cos(da));
+    const dd=Math.hypot(e.x-x,e.y-y);let da=Math.atan2(e.y-y,e.x-x)-a;da=Math.atan2(Math.sin(da),Math.cos(da));
     if(dd<165&&Math.abs(da)<.65)damageEnemy(e,cs.atk);
   }
-  arena.slashes.push({x,y,angle:a,t:.35}); burst(x,y,10,'slash');
+  arena.slashes.push({x,y,angle:a,t:.35});burst(x,y,10,'slash');
 }
 function coopDrawPlayers(){
   if(!coopSocket)return;
-  const ac=arenaCanvas.getContext('2d');
   for(const p of Object.values(coopPeers)){
     if(p.id===coopId)continue;
     ac.save();ac.translate(p.x,p.y);ac.rotate(p.angle||0);
-    ac.shadowColor='#ff9fbd';ac.shadowBlur=20;ac.fillStyle='#ff6f9a';
-    ac.beginPath();ac.arc(0,-18,11,0,Math.PI*2);ac.fill();
-    ac.shadowBlur=0;ac.fillStyle='#ff9eb4';ac.fillRect(-12,-7,24,28);
-    ac.fillStyle='#4b1628';ac.fillRect(-10,21,8,17);ac.fillRect(2,21,8,17);
-    ac.fillStyle='#fff';ac.font='bold 10px Arial';ac.textAlign='center';ac.fillText(p.name||'Player',0,-40);
-    ac.restore();
+    ac.shadowColor='#ff9fbd';ac.shadowBlur=20;ac.fillStyle='#ff6f9a';ac.beginPath();ac.arc(0,-18,11,0,Math.PI*2);ac.fill();
+    ac.shadowBlur=0;ac.fillStyle='#ff9eb4';ac.fillRect(-12,-7,24,28);ac.fillStyle='#4b1628';ac.fillRect(-10,21,8,17);ac.fillRect(2,21,8,17);
+    ac.fillStyle='#fff';ac.font='bold 10px Arial';ac.textAlign='center';ac.fillText(p.name||'Player',0,-40);ac.restore();
   }
 }
 function coopTick(){
   if(!coopSocket||coopSocket.readyState!==1)return;
-  const p=arena.player;
-  const now=performance.now();
-  if(now-coopLastNet>80){
-    coopLastNet=now;
-    coopSend({type:'pos',name:$('coopName')?.value||'Player',x:p.x,y:p.y,angle:p.angle||0});
-  }
-  if(coopHost&&now-coopLastState>180){
+  const p=arena.player,now=performance.now();
+  if(now-coopLastNet>60){coopLastNet=now;coopSend({type:'pos',name:$('coopName')?.value||'Player',x:p.x,y:p.y,angle:p.angle||0});}
+  if(coopHost&&coopStarted&&now-coopLastState>100){
     coopLastState=now;
     const enemies=arena.enemies.map(e=>({x:e.x,y:e.y,hp:e.hp,maxHp:e.maxHp,r:e.r,speed:e.speed,atk:e.atk,hit:e.hit,attack:e.attack,variant:e.variant,type:e.type,boss:e.boss,bossIndex:e.bossIndex,specialCd:e.specialCd,poison:e.poison,name:e.name,rarity:e.rarity,bossDef:e.bossDef?{name:e.bossDef.name}:null}));
-    coopSend({type:'state',wave:arena.wave,enemies});
+    coopSend({type:'state',wave:arena.wave,enemies,player:{hp:arena.player.hp}});
   }
 }
-function showCoopStart(show){$('coopStartOverlay').classList.toggle('hidden',!show);}
+function showCoopStart(show){const el=$('coopStartOverlay');if(el)el.classList.toggle('hidden',!show);if(show)updateCoopLobby()}
 function updateCoopLobby(){
-  const players=Object.keys(coopPeers).length+(coopId?1:0);
-  const st=$('coopStartStatus');
-  if(st)st.textContent=coopHost?'You are the host • '+players+' player'+(players===1?'':'s')+' connected':'Waiting for the host to start • '+players+' player'+(players===1?'':'s')+' connected';
-  const btn=$('coopStartBattle'); if(btn){btn.disabled=!coopHost;btn.textContent=coopHost?'▶ START BATTLE':'⏳ WAITING FOR HOST';}
-  const txt=$('coopStartText'); if(txt)txt.textContent=coopHost?'Everyone is in the room? Press START BATTLE and the fight begins for everyone.':'You are connected. Wait for the host to press START BATTLE.';
+  const total=Object.keys(coopPeers).length+(coopId?1:0);
+  const st=$('coopStartStatus'),btn=$('coopStartBattle'),txt=$('coopStartText');
+  if(st)st.textContent=coopHost?'You are the host • '+total+' player'+(total===1?'':'s')+' connected':'Connected • waiting for the host • '+total+' player'+(total===1?'':'s');
+  if(btn){btn.disabled=!coopHost||!coopSocket||coopSocket.readyState!==1;btn.textContent=coopHost?'▶ START BATTLE':'⏳ WAITING FOR HOST';}
+  if(txt)txt.textContent=coopHost?'Everyone joins this room first. When ready, press START BATTLE. The server will synchronize the start for everyone.':'You are in the room. Wait for the host to press START BATTLE.';
 }
 function resetArenaRun(){
-  arena.running=false; arena.wave=1; arena.spawned=0; arena.enemies=[]; arena.projectiles=[]; arena.particles=[]; arena.slashes=[]; resetWaveUpgrades(); arena.player={x:0,y:0,hp:combatStats().maxHp,dir:1,angle:0,attackCd:0,slashT:0,inv:0,skillCd:0}; resizeArena(); arenaStats();
+  arena.running=false;arena.wave=1;arena.spawned=0;arena.enemies=[];arena.projectiles=[];arena.particles=[];arena.slashes=[];resetWaveUpgrades();arena.player={x:0,y:0,hp:combatStats().maxHp,dir:1,angle:0,attackCd:0,slashT:0,inv:0,skillCd:0};resizeArena();arenaStats();
 }
 function beginCoopBattle(announce=true){
   if(arenaModal.classList.contains('hidden'))arenaModal.classList.remove('hidden');
-  $('coopModal').classList.add('hidden'); showCoopStart(false); arena.running=true; initArenaAudio(); arenaStats(); arenaLog('⚔️ Co-op battle started!');
+  $('coopModal').classList.add('hidden');showCoopStart(false);arena.running=true;initArenaAudio();arenaStats();arenaLog('⚔️ Co-op battle started!');
   if(announce)coopSend({type:'start'});
 }
 function coopStart(host){
-  coopHost=host; coopStarted=false; resetArenaRun(); showCoopStart(true); updateCoopLobby(); coopConnect();
+  coopHost=host;coopStarted=false;clearTimeout(coopStartTimer);resetArenaRun();showCoopStart(true);updateCoopLobby();coopConnect();
 }
-$('lsaCoopBtn').onclick=()=>{$('coopModal').classList.remove('hidden');updateCoopLobby()};
-$('coopClose').onclick=()=>{$('coopModal').classList.add('hidden')};
+$('lsaCoopBtn').onclick=()=>{
+  // Entering co-op MUST stop the solo run immediately; it never continues underneath the lobby.
+  coopOpenedFromRunning=!!arena.running;
+  arena.running=false;
+  $('coopModal').classList.remove('hidden');
+  showCoopStart(false);
+  coopSetStatus('Offline');
+  updateCoopLobby();
+};
+$('coopClose').onclick=()=>{
+  $('coopModal').classList.add('hidden');
+  arena.running=false;
+  showCoopStart(false);
+  // Solo mode stays stopped after opening co-op, as requested.
+  coopOpenedFromRunning=false;
+};
 $('coopHost').onclick=()=>coopStart(true);
 $('coopJoin').onclick=()=>coopStart(false);
 $('coopRandom').onclick=()=>{$('coopRoom').value=Math.random().toString(36).slice(2,8).toUpperCase()};
-$('coopStartBattle').onclick=()=>{if(coopHost&&coopSocket&&coopSocket.readyState===1){coopStarted=true;beginCoopBattle(true)}};
-function coopPatchGame(){
-  const oldLoop=arenaLoop;
-}
+$('coopStartBattle').onclick=()=>{if(coopHost&&coopSocket&&coopSocket.readyState===1){coopStarted=true;coopSend({type:'start'});}};
 const originalSlash=slash;
 slash=function(angle){
   originalSlash(angle);
-  if(coopSocket&&coopSocket.readyState===1){
-    coopSend({type:'attack',x:arena.player.x,y:arena.player.y,angle});
-  }
+  if(coopSocket&&coopSocket.readyState===1&&coopStarted)coopSend({type:'attack',x:arena.player.x,y:arena.player.y,angle});
 };
-coopDrawPlayers();
 function arenaLoop(t){coopTick();const dt=Math.min(.033,(t-arena.last)/1000||0);arena.last=t;updateArena(dt);drawArena();if(arenaModal&&!arenaModal.classList.contains('hidden'))requestAnimationFrame(arenaLoop)}
 function startArena(){initArenaAudio();arenaModal.classList.remove('hidden');$('lsaArchive').classList.add('hidden');resetArenaRun();arena.running=true;arenaStats();arenaLog('Enter the arena. Broken-heart fighters are coming...');requestAnimationFrame(arenaLoop)}
 function endArena(){arena.running=false;arenaModal.classList.add('hidden');showCoopStart(false);coopStarted=false;try{if(coopSocket)coopSocket.close()}catch(e){}coopSocket=null;coopId=null;coopPeers={};coopHost=false;saveArena()}
